@@ -1,0 +1,110 @@
+name: master_mobile
+description: "Master.az — home services marketplace mobile client (clients + masters)"
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # HTTP
+  dio: ^5.7.0
+  pretty_dio_logger: ^1.4.0
+  # Plain http client — used for unauth third-party calls (Nominatim
+  # geocoder) where we don't want our Dio auth interceptor to attach our
+  # Bearer token to someone else's API.
+  http: ^1.2.2
+
+  # Storage
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.2
+
+  # Models / serialization
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+  # Routing
+  go_router: ^14.4.0
+
+  # Localization
+  intl: ^0.19.0
+
+  # Firebase + Push — disabled for web preview (block engine init without
+  # firebase_options.dart). Re-enable when shipping the mobile bundle.
+  # firebase_core: ^3.6.0
+  # firebase_messaging: ^15.1.3
+  # flutter_local_notifications: ^17.2.3
+  # firebase_crashlytics: ^4.1.3
+
+  # Maps + GPS — google_maps_flutter has no web stub, disabled for preview.
+  # google_maps_flutter: ^2.9.0
+  geolocator: ^13.0.1
+  geocoding: ^3.0.0
+  # Pure-Dart Leaflet equivalent — used for the address picker, mirrors the
+  # OSM + Nominatim setup of the site's AddressMapPicker.client.vue.
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
+  # Camera / images
+  image_picker: ^1.1.2
+  flutter_image_compress: ^2.3.0
+
+  # Deep links + URL launcher
+  url_launcher: ^6.3.1
+
+  # Realtime — in-app voice calls (WebRTC) + Reverb signaling over the
+  # native Pusher protocol via raw WebSocket. Works on Flutter Web and mobile.
+  flutter_webrtc: ^0.11.6
+  web_socket_channel: ^3.0.1
+
+  # UI helpers
+  cached_network_image: ^3.4.1
+  shimmer: ^3.0.0
+  flutter_svg: ^2.0.10+1
+  google_fonts: ^6.2.1                      # Space Grotesk per Handyman design
+  device_info_plus: ^11.0.0
+  package_info_plus: ^8.0.2
+  permission_handler: ^11.3.1
+
+  # Misc
+  collection: ^1.18.0
+  path_provider: ^2.1.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+  # Code generation
+  build_runner: ^2.4.13
+  freezed: ^2.5.7
+  json_serializable: ^6.8.0
+  riverpod_generator: ^2.4.3
+  custom_lint: ^0.6.7
+  riverpod_lint: ^2.3.13
+
+flutter:
+  uses-material-design: true
+  generate: true   # enables flutter_gen_l10n for ARB → Dart
+  assets:
+    - assets/images/
+
+  # Fonts (placeholder — drop your TTFs into assets/fonts and uncomment)
+  # fonts:
+  #   - family: Inter
+  #     fonts:
+  #       - asset: assets/fonts/Inter-Regular.ttf
+  #       - asset: assets/fonts/Inter-Medium.ttf
+  #         weight: 500
+  #       - asset: assets/fonts/Inter-SemiBold.ttf
+  #         weight: 600

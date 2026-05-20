@@ -1,0 +1,108 @@
+import 'package:dio/dio.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:master_mobile/core/api/api_client.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
+final pushServiceProvider = Provider<PushService>((ref) {
+  return PushService(ref.watch(apiClientProvider));
+});
+
+/// Wires Firebase Messaging to the backend. Call init() after the user logs
+/// in. On token refresh from FCM, re-registers automatically. On logout, call
+/// unregister(currentToken).
+class PushService {
+  PushService(this._dio);
+  final Dio _dio;
+
+  final _localNotifications = FlutterLocalNotificationsPlugin();
+  String? _currentToken;
+
+  /// Call once after login + after permission grant.
+  Future<void> init({required String localeCode}) async {
+    final messaging = FirebaseMessaging.instance;
+
+    // Permissions (iOS shows the prompt; Android 13+ requires POST_NOTIFICATIONS).
+    final settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+    if (settings.authorizationStatus == AuthorizationStatus.denied) return;
+
+    final token = await messaging.getToken();
+    if (token != null) await _registerWithBackend(token, localeCode);
+    _currentToken = token;
+
+    messaging.onTokenRefresh.listen((newToken) async {
+      _currentToken = newToken;
+      await _registerWithBackend(newToken, localeCode);
+    });
+
+    // Foreground messages — show via local notifications plugin since FCM
+    // does NOT auto-show in foreground on iOS / Android.
+    FirebaseMessaging.onMessage.listen(_showLocalNotification);
+
+    await _initLocalNotifications();
+  }
+
+  Future<void> _registerWithBackend(String token, String localeCode) async {
+    final pkg = await PackageInfo.fromPlatform();
+    final platform = kIsWeb
+        ? 'web'
+        : (defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android');
+    await _dio.post<void>('/devices/register', data: {
+      'platform': platform,
+      'token': token,
+      'app_version': pkg.version,
+      'device_model': await _deviceModel(),
+      'locale': localeCode,
+    });
+  }
+
+  Future<String?> _deviceModel() async {
+    // Keep this lightweight — full device_info_plus call is OK but skip on web.
+    return null;
+  }
+
+  Future<void> unregister() async {
+    final token = _currentToken;
+    if (token == null) return;
+    try {
+      await _dio.post<void>('/devices/unregister', data: {'token': token});
+    } finally {
+      _currentToken = null;
+    }
+  }
+
+  Future<void> _initLocalNotifications() async {
+    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosInit = DarwinInitializationSettings();
+    await _localNotifications.initialize(
+      const InitializationSettings(android: androidInit, iOS: iosInit),
+    );
+  }
+
+  Future<void> _showLocalNotification(RemoteMessage msg) async {
+    final notif = msg.notification;
+    if (notif == null) return;
+
+    await _localNotifications.show(
+      notif.hashCode,
+      notif.title,
+      notif.body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'default',
+          'General',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(presentSound: true, presentBadge: true),
+      ),
+      payload: msg.data.toString(),
+    );
+  }
+}

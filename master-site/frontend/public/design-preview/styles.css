@@ -1,0 +1,280 @@
+/* Handyman — desktop rebuild */
+:root {
+  --bg-0: #0a0a0a;
+  --bg-1: #121212;
+  --bg-2: #1a1a1a;
+  --bg-3: #18181b;
+  --bg-4: #27272a;
+  --bg-warm: #1a1a0f;
+  --bg-warm-2: #2a2a15;
+  --accent: #ffff00;
+  --accent-glow: rgba(255, 255, 0, 0.2);
+  --text: #ffffff;
+  --text-2: rgba(255, 255, 255, 0.7);
+  --text-3: rgba(255, 255, 255, 0.4);
+  --text-muted: #64748b;
+  --text-slate: #94a3b8;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-2: rgba(255, 255, 255, 0.05);
+  --ok: #22c55e;
+  --err: #ef4444;
+}
+
+/* light theme override */
+body.theme-light {
+  --bg-0: #f5f5f2;
+  --bg-1: #ffffff;
+  --bg-2: #efefe8;
+  --bg-3: #ffffff;
+  --bg-4: #e4e4e7;
+  --bg-warm: #fffbe6;
+  --bg-warm-2: #fff6bf;
+  --accent: #111111;
+  --accent-glow: rgba(0, 0, 0, 0.12);
+  --text: #0a0a0a;
+  --text-2: rgba(10, 10, 10, 0.72);
+  --text-3: rgba(10, 10, 10, 0.45);
+  --text-muted: #64748b;
+  --text-slate: #475569;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-2: rgba(0, 0, 0, 0.04);
+}
+body.theme-light .accent-text { color: #ca8a04 !important; }
+body.theme-light .accent-bg { background: #facc15 !important; color: #111 !important; }
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: "Space Grotesk", -apple-system, system-ui, sans-serif;
+  background: #050505;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A frame that holds a fixed-width desktop design at 1440, with its own scroll area */
+.frame {
+  width: 1440px;
+  background: var(--bg-0);
+  color: var(--text);
+  font-family: "Space Grotesk", sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.pub { font-family: "Public Sans", sans-serif; }
+
+/* Header */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: 80px;
+  background: rgba(0,0,0,0.8);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 0 110px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+body.theme-light .topbar { background: rgba(255,255,255,0.85); }
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Public Sans", sans-serif;
+  font-weight: 800;
+  font-size: 24px;
+  color: var(--accent);
+}
+.logo-mark {
+  width: 32px; height: 34px;
+  border-radius: 8px;
+  background: var(--accent);
+  display: grid; place-items: center;
+}
+.logo-mark svg { fill: #000; }
+body.theme-light .logo { color: #111; }
+
+.nav {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+}
+.nav a {
+  color: rgba(255,255,255,0.7);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.nav a.active { color: var(--accent); }
+.nav .cta {
+  background: var(--accent);
+  color: #000;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 13px;
+}
+body.theme-light .nav a { color: rgba(0,0,0,0.7); }
+body.theme-light .nav a.active { color: #111; }
+
+.nav-right {
+  display: flex; align-items: center; gap: 20px;
+}
+.bell {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  display: grid; place-items: center;
+  color: var(--text-2);
+  cursor: pointer;
+  position: relative;
+}
+.bell .dot {
+  position: absolute; top: 9px; right: 10px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent);
+}
+.profile-chip {
+  display: flex; align-items: center; gap: 10px;
+  padding-left: 20px;
+  border-left: 1px solid var(--border);
+}
+.profile-chip .name { font-size: 13px; font-weight: 700; }
+.profile-chip .role { font-size: 10px; letter-spacing: 1px; color: var(--text-3); text-transform: uppercase; }
+.profile-chip .avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background-size: cover; background-position: center;
+  border: 2px solid var(--accent);
+}
+
+/* Buttons */
+.btn {
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  border-radius: 999px;
+  transition: all 180ms ease;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #000;
+  box-shadow: 0 0 24px rgba(255,255,0,0.25);
+  padding: 16px 32px;
+  font-size: 16px;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 0 32px rgba(255,255,0,0.4); }
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--bg-4);
+  padding: 16px 32px;
+  font-weight: 500;
+  font-size: 16px;
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.05); }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  letter-spacing: 0.05em;
+}
+
+/* Glowing dots */
+.glow-bg {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(80px);
+  opacity: 0.6;
+}
+.glow-yellow-1 {
+  right: 80px; top: 80px;
+  width: 384px; height: 384px;
+  background: rgba(255, 255, 0, 0.15);
+}
+.glow-yellow-2 {
+  left: 80px; top: 440px;
+  width: 500px; height: 500px;
+  background: rgba(255, 255, 0, 0.08);
+}
+
+/* Form inputs */
+.phone-field {
+  background: rgba(39,39,42,0.5);
+  border: 1px solid #3f3f46;
+  border-radius: 999px;
+  display: flex; align-items: center;
+  height: 60px;
+  padding: 3px;
+}
+.phone-field .cc {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 18px;
+  font-weight: 500;
+  border-right: 1px solid #3f3f46;
+  height: 100%;
+  color: var(--text);
+  cursor: pointer;
+}
+.phone-field input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 18px;
+  padding: 0 16px;
+}
+.phone-field input::placeholder { color: #52525b; }
+
+.label {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: #71717a;
+  font-weight: 500;
+  text-transform: uppercase;
+  padding-left: 16px;
+}
+
+.or-divider {
+  display: flex; align-items: center; gap: 16px;
+  color: #71717a;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  margin: 24px 0;
+}
+.or-divider::before, .or-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #27272a;
+}
+
+/* Scrollable column */
+.scroll-col {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #333 transparent;
+}
+.scroll-col::-webkit-scrollbar { width: 6px; }
+.scroll-col::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+/* Focus */
+input:focus, textarea:focus { outline: none; }
+
+/* Hide unnecessary bits of design canvas header */
+.canvas-toolbar h1 { font-family: "Public Sans", sans-serif; }

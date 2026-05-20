@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Handyman — Desktop Rebuild</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Public+Sans:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    html, body { height: 100%; }
+    body { background: #ece8e0; }
+
+    /* Tweaks panel */
+    .tweaks-panel {
+      position: fixed; bottom: 24px; right: 24px;
+      z-index: 10000;
+      background: #1a1a1a; color: #fff;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      padding: 20px 22px;
+      min-width: 240px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      display: none;
+    }
+    body.tweaks-on .tweaks-panel { display: block; }
+    .tweaks-panel h3 {
+      margin: 0 0 16px;
+      font-size: 13px; letter-spacing: 1.6px;
+      font-weight: 700; color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+    }
+    .tweak-row {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 12px; font-size: 13px; font-weight: 500;
+    }
+    .tweak-toggle {
+      position: relative; width: 44px; height: 24px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 999px; cursor: pointer;
+      transition: background 180ms;
+      border: none; padding: 0;
+    }
+    .tweak-toggle::after {
+      content: ""; position: absolute;
+      top: 3px; left: 3px;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #fff; transition: transform 180ms;
+    }
+    .tweak-toggle.on { background: #FFFF00; }
+    .tweak-toggle.on::after { transform: translateX(20px); background: #000; }
+  </style>
+  <meta name="ext-resource-dependency" content="assets/pro-1.png" data-resource-id="pro_1_png" />
+  <meta name="ext-resource-dependency" content="assets/pro-2.png" data-resource-id="pro_2_png" />
+  <meta name="ext-resource-dependency" content="assets/marcus.jpg" data-resource-id="marcus_jpg" />
+  <meta name="ext-resource-dependency" content="assets/alex-rivera.jpg" data-resource-id="alex_rivera_jpg" />
+  <meta name="ext-resource-dependency" content="assets/sarah-chen.jpg" data-resource-id="sarah_chen_jpg" />
+  <meta name="ext-resource-dependency" content="assets/contact-1.jpg" data-resource-id="contact_1_jpg" />
+  <meta name="ext-resource-dependency" content="assets/contact-2.jpg" data-resource-id="contact_2_jpg" />
+  <meta name="ext-resource-dependency" content="assets/contact-3.jpg" data-resource-id="contact_3_jpg" />
+  <meta name="ext-resource-dependency" content="assets/portfolio-1.png" data-resource-id="portfolio_1_png" />
+  <meta name="ext-resource-dependency" content="assets/portfolio-2.png" data-resource-id="portfolio_2_png" />
+  <meta name="ext-resource-dependency" content="assets/portfolio-3.png" data-resource-id="portfolio_3_png" />
+  <meta name="ext-resource-dependency" content="assets/portfolio-4.png" data-resource-id="portfolio_4_png" />
+  <meta name="ext-resource-dependency" content="assets/reviewer-1.jpg" data-resource-id="reviewer_1_jpg" />
+  <meta name="ext-resource-dependency" content="assets/booking-bg.jpg" data-resource-id="booking_bg_jpg" />
+  <meta name="ext-resource-dependency" content="assets/julianne.jpg" data-resource-id="julianne_jpg" />
+  <template id="__bundler_thumbnail" data-bg-color="#ece8e0">
+    <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+      <rect x="80" y="120" width="1040" height="110" rx="22" fill="#1a1a1a"/>
+      <rect x="140" y="160" width="300" height="30" rx="8" fill="#FFFF00"/>
+      <rect x="80" y="270" width="500" height="380" rx="22" fill="#1a1a1a"/>
+      <rect x="620" y="270" width="500" height="180" rx="22" fill="#FFFF00"/>
+      <rect x="620" y="470" width="240" height="180" rx="22" fill="#1a1a1a"/>
+      <rect x="880" y="470" width="240" height="180" rx="22" fill="#1a1a1a"/>
+      <circle cx="1020" cy="360" r="44" fill="#1a1a1a"/>
+      <text x="600" y="730" font-family="Space Grotesk, sans-serif" font-size="48" font-weight="700" text-anchor="middle" fill="#1a1a1a">HANDYMAN</text>
+    </svg>
+  </template>
+</head>
+<body>
+
+  <div id="root"></div>
+  <div class="tweaks-panel" id="tweaks-panel">
+    <h3>Tweaks</h3>
+    <div class="tweak-row">
+      <span>Light Theme</span>
+      <button class="tweak-toggle" id="tweak-theme" aria-label="Light theme"></button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="components/chrome.standalone.jsx"></script>
+  <script type="text/babel" src="components/screen-home.standalone.jsx"></script>
+  <script type="text/babel" src="components/screen-auth.standalone.jsx"></script>
+  <script type="text/babel" src="components/screen-specialists.standalone.jsx"></script>
+  <script type="text/babel" src="components/screen-person.standalone.jsx"></script>
+  <script type="text/babel" src="components/screen-booking.standalone.jsx"></script>
+  <script type="text/babel" src="components/screen-chat.standalone.jsx"></script>
+
+  <script type="text/babel" data-presets="react">
+    const TWEAKS = /*EDITMODE-BEGIN*/{
+      "theme": "dark"
+    }/*EDITMODE-END*/;
+
+    function applyTweaks(t) {
+      document.body.classList.toggle("theme-light", t.theme === "light");
+      const btn = document.getElementById("tweak-theme");
+      if (btn) btn.classList.toggle("on", t.theme === "light");
+    }
+    applyTweaks(TWEAKS);
+
+    document.getElementById("tweak-theme").addEventListener("click", () => {
+      TWEAKS.theme = TWEAKS.theme === "light" ? "dark" : "light";
+      applyTweaks(TWEAKS);
+      window.parent.postMessage({ type: "__edit_mode_set_keys", edits: { theme: TWEAKS.theme } }, "*");
+    });
+
+    // Edit-mode protocol
+    window.addEventListener("message", (e) => {
+      const d = e.data || {};
+      if (d.type === "__activate_edit_mode") document.body.classList.add("tweaks-on");
+      if (d.type === "__deactivate_edit_mode") document.body.classList.remove("tweaks-on");
+    });
+    window.parent.postMessage({ type: "__edit_mode_available" }, "*");
+
+    // Shared navigation handler that lets the user "navigate" within an artboard
+    // by showing a different screen for that slot. We give each artboard its own state.
+    const AB = ({ initial, children }) => {
+      const [screen, setScreen] = React.useState(initial);
+      return children({ screen, onNav: setScreen });
+    };
+
+    const App = () => (
+      <DesignCanvas>
+        <DCSection id="landing" title="Landing" subtitle="Public home page — hero, services, how it works">
+          <DCArtboard id="home" label="00 · Home / Landing" width={1440} height={3120}>
+            <AB initial="home">
+              {({ screen, onNav }) => {
+                if (screen === "home")        return <ScreenHome onNav={onNav} />;
+                if (screen === "specialists") return <ScreenSpecialists onNav={onNav} onBookSpecialist={() => onNav("person")} />;
+                if (screen === "person")      return <ScreenPerson onNav={onNav} onBook={() => onNav("booking")} />;
+                if (screen === "booking")     return <ScreenBooking onNav={onNav} onConfirm={() => onNav("home")} />;
+                if (screen === "chat")        return <ScreenChat onNav={onNav} />;
+                return null;
+              }}
+            </AB>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="auth" title="Authentication" subtitle="Phone + SMS onboarding flow">
+          <DCArtboard id="login" label="01 · Login" width={1440} height={1024}>
+            <AB initial="login">
+              {({ screen, onNav }) => screen === "login"
+                ? <ScreenLogin onContinue={() => onNav("sms")} />
+                : <ScreenSMS onVerify={() => onNav("login")} />
+              }
+            </AB>
+          </DCArtboard>
+
+          <DCArtboard id="sms" label="02 · SMS Verify" width={1440} height={1024}>
+            <ScreenSMS />
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="discover" title="Discover" subtitle="Browse specialists, view profile">
+          <DCArtboard id="specialists" label="03 · Specialists Grid" width={1440} height={1380}>
+            <AB initial="specialists">
+              {({ screen, onNav }) => {
+                if (screen === "specialists") return <ScreenSpecialists onNav={onNav} onBookSpecialist={() => onNav("person")} />;
+                if (screen === "person")     return <ScreenPerson onNav={onNav} onBook={() => onNav("booking")} />;
+                if (screen === "booking")    return <ScreenBooking onNav={onNav} onConfirm={() => onNav("specialists")} />;
+                if (screen === "chat")       return <ScreenChat onNav={onNav} />;
+                return null;
+              }}
+            </AB>
+          </DCArtboard>
+
+          <DCArtboard id="person" label="04 · Specialist Profile" width={1440} height={2200}>
+            <AB initial="person">
+              {({ screen, onNav }) => screen === "person"
+                ? <ScreenPerson onNav={onNav} onBook={() => onNav("booking")} />
+                : <ScreenBooking onNav={onNav} onConfirm={() => onNav("person")} />
+              }
+            </AB>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="transact" title="Transact" subtitle="Book a service and chat with your specialist">
+          <DCArtboard id="booking" label="05 · Booking Checkout" width={1440} height={2259}>
+            <ScreenBooking />
+          </DCArtboard>
+
+          <DCArtboard id="chat" label="06 · Messaging" width={1440} height={1024}>
+            <ScreenChat />
+          </DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+    );
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = "../build"
+
+// Workaround for Flutter 3.24 + new-style plugins (app_links 6.x, geolocator_android 4.6+)
+// that reference `flutter.compileSdkVersion` inside their own android{} block.
+// The dev.flutter.flutter-gradle-plugin only registers the `flutter` extension on
+// the app subproject; plugin subprojects must get a compatible one before they
+// are evaluated.
+class FlutterExtCompat {
+    int compileSdkVersion = 34
+    int minSdkVersion = 21
+    int targetSdkVersion = 34
+    String ndkVersion = "23.1.7779620"
+}
+
+subprojects { sp ->
+    sp.buildDir = "${rootProject.buildDir}/${sp.name}"
+
+    sp.beforeEvaluate {
+        if (sp.name != 'app' && sp.extensions.findByName('flutter') == null) {
+            sp.extensions.create('flutter', FlutterExtCompat)
+        }
+    }
+
+    sp.afterEvaluate {
+        if (sp.hasProperty('android')) {
+            sp.android {
+                if (namespace == null) {
+                    namespace = "az.gasimov.master.plugin.${sp.name.replaceAll('-','_')}"
+                }
+            }
+        }
+    }
+
+    if (sp.name != 'app') {
+        sp.evaluationDependsOn(":app")
+    }
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}

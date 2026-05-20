@@ -1,0 +1,135 @@
+services:
+  master-mobile-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Override at build to point the bundle at staging or local backend.
+        API_BASE_URL: ${API_BASE_URL:-https://master.gasimov.az/api/v1}
+        # Sub-path the bundle is served from. Must match nginx location.
+        BASE_HREF: ${BASE_HREF:-/mobile/}
+        # Stamp every build with a unique ID so CF cache-busting query strings
+        # change on every rebuild (see Dockerfile cache-buster sed step).
+        BUILD_ID: ${BUILD_ID:-build}
+    container_name: master-mobile-web
+    restart: unless-stopped
+    ports:
+      - "8095:80"
+    networks:
+      - master-network
+
+  # Watch-and-rebuild dev server. Source is bind-mounted; inotify triggers
+  # `flutter build web --debug` (~5-10s incremental), output is served with
+  # a tiny static HTTP server. Browser still needs a manual refresh — full
+  # hot-reload is unavailable because `flutter run -d web-server` does not
+  # support `--base-href`, so the bundle wouldn't load under /mobile-dev/.
+  # Reachable at https://master.gasimov.az/mobile-dev/.
+  # Start with `docker compose --profile dev up -d master-mobile-dev`.
+  master-mobile-dev:
+    profiles: ["dev"]
+    image: ghcr.io/cirruslabs/flutter:3.24.5
+    container_name: master-mobile-dev
+    working_dir: /app
+    volumes:
+      - .:/app
+      - mobile-dev-pub-cache:/root/.pub-cache
+      - mobile-dev-build:/app/build
+      - mobile-dev-dart-tool:/app/.dart_tool
+    ports:
+      - "8096:8095"
+    networks:
+      - master-network
+    restart: unless-stopped
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        export DEBIAN_FRONTEND=noninteractive
+        if ! command -v inotifywait >/dev/null; then
+          apt-get update -qq && apt-get install -y --no-install-recommends inotify-tools python3 >/dev/null
+        fi
+        echo "==> flutter pub get"
+        flutter pub get
+        # web/ scaffolding is .gitignored — recreate if missing.
+        if [ ! -f web/index.html ]; then
+          echo "==> flutter create (web platform scaffolding)"
+          flutter create . --org az.gasimov.master --platforms=web --project-name master_mobile
+        fi
+        echo "==> build_runner"
+        dart run build_runner build --delete-conflicting-outputs || true
+        echo "==> gen-l10n"
+        flutter gen-l10n || true
+
+        rebuild() {
+          # If pubspec.yaml is newer than the resolved package_config, deps
+          # need a refresh — `flutter pub get` is cheap when there's nothing
+          # to do, otherwise it pulls the new packages before compilation.
+          if [ pubspec.yaml -nt .dart_tool/package_config.json ] 2>/dev/null; then
+            echo "==> pubspec changed — flutter pub get"
+            flutter pub get || true
+          fi
+          # gen-l10n picks up ARB changes (~1s) — must run before web build
+          # otherwise new strings would compile-error from missing accessors.
+          flutter gen-l10n >/dev/null 2>&1 || true
+          echo "==> flutter build web --profile (incremental)"
+          if flutter build web --profile \
+            --web-renderer canvaskit \
+            --base-href=/mobile-dev/ \
+            --no-tree-shake-icons \
+            --pwa-strategy=none \
+            --dart-define=API_BASE_URL=https://master.gasimov.az/api/v1; then
+              # Cache-buster: stamp main.dart.js / canvaskit URLs with a fresh
+              # timestamp on every rebuild so Cloudflare's edge cache (which
+              # ignores our no-store hint until existing entries expire) is
+              # forced to fetch the new bundle on the next reload.
+              ts=$$(date +%s)
+              # 1) bust references inside bootstrap.js
+              sed -i "s|\"main\.dart\.js\"|\"main.dart.js?v=$$ts\"|g" build/web/flutter_bootstrap.js
+              sed -i "s|\"canvaskit\.js\"|\"canvaskit.js?v=$$ts\"|g"   build/web/flutter_bootstrap.js
+              sed -i "s|\"canvaskit\.wasm\"|\"canvaskit.wasm?v=$$ts\"|g" build/web/flutter_bootstrap.js
+              # 2) bust bootstrap.js itself in index.html — CF cached the
+              # bootstrap script (max-age=14400) before our no-store hint took
+              # effect, so we have to give it a fresh URL on every reload.
+              sed -i "s|flutter_bootstrap\.js[^\"]*|flutter_bootstrap.js?v=$$ts|g" build/web/index.html
+              echo "==> build OK ($$(date +%H:%M:%S)) buster=$$ts"
+          else
+              echo "!!! build FAILED ($(date +%H:%M:%S))"
+          fi
+        }
+        # ensure dir exists even if first build fails so static server starts
+        mkdir -p build/web
+        echo "<h1>master-mobile-dev: first build in progress…</h1>" > build/web/index.html
+        rebuild
+
+        # static server in the background — serves build/web on :8095
+        ( cd build/web && python3 -m http.server 8095 --bind 0.0.0.0 ) &
+
+        # watch source and rebuild on change. inotify doesn't propagate
+        # through Docker bind mounts on every host kernel, so we fall back
+        # to a 2-second mtime poll over the source tree (lib/, assets/,
+        # pubspec.yaml, l10n.yaml). Cheap because we only hash mtimes.
+        echo "==> polling lib/ assets/ pubspec.yaml l10n.yaml"
+        prev=""
+        while true; do
+          cur=$$(find lib/ assets/ pubspec.yaml l10n.yaml -type f -printf '%T@:%p\n' 2>/dev/null | LC_ALL=C sort | sha256sum | cut -d' ' -f1)
+          if [ -n "$$prev" ] && [ "$$cur" != "$$prev" ]; then
+            rebuild
+          fi
+          prev="$$cur"
+          sleep 2
+        done
+
+# Reuse the same network the master-site backend is on so /api requests can
+# hit the API container directly if you want to override API_BASE_URL with
+# `http://master-api:8000/api/v1` at build time. For browser preview the
+# default public URL works without any wiring.
+networks:
+  master-network:
+    external: true
+    name: master-site_master-network
+
+volumes:
+  mobile-dev-pub-cache:
+  mobile-dev-build:
+  mobile-dev-dart-tool:

@@ -1,0 +1,91 @@
+# /root contains an entire user home. We only want to version-control the two
+# project directories. Whitelist them by ignoring everything else first, then
+# explicitly allowing what should be tracked.
+
+# Ignore everything at the root by default
+/*
+
+# Allow only the project tree
+!/master-site
+!/master-mobile
+!/.gitignore
+!/README.md
+
+# === master-site exclusions ===
+# Backend (Laravel)
+master-site/backend/vendor/
+master-site/backend/.env
+master-site/backend/.env.*
+!master-site/backend/.env.example
+master-site/backend/storage/logs/*
+!master-site/backend/storage/logs/.gitkeep
+master-site/backend/storage/framework/cache/
+master-site/backend/storage/framework/sessions/
+master-site/backend/storage/framework/views/
+master-site/backend/storage/app/public/*
+!master-site/backend/storage/app/public/.gitkeep
+master-site/backend/bootstrap/cache/*.php
+master-site/backend/public/storage
+master-site/backend/.phpunit.result.cache
+
+# Frontend (Nuxt)
+master-site/frontend/node_modules/
+master-site/frontend/.nuxt/
+master-site/frontend/.output/
+master-site/frontend/.env
+master-site/frontend/.env.*
+!master-site/frontend/.env.example
+master-site/frontend/public/master-mobile.apk
+
+# SSE
+master-site/sse/node_modules/
+master-site/sse/.env
+master-site/sse/.env.*
+
+# DB backups — never commit, contains PII
+master-site/backups/
+master-site/**/*.sql
+master-site/**/*.sql.gz
+
+# Misc
+master-site/**/.DS_Store
+master-site/*.log
+
+# === master-mobile exclusions ===
+master-mobile/build/
+master-mobile/.dart_tool/
+master-mobile/.flutter-plugins
+master-mobile/.flutter-plugins-dependencies
+master-mobile/.idea/
+master-mobile/.vscode/
+master-mobile/android/.gradle/
+master-mobile/android/local.properties
+master-mobile/android/app/.cxx/
+master-mobile/android/app/build/
+master-mobile/android/key.properties
+master-mobile/android/app/upload-keystore.jks
+master-mobile/android/app/release-keystore.jks
+master-mobile/ios/Pods/
+master-mobile/ios/.symlinks/
+master-mobile/ios/Flutter/flutter_export_environment.sh
+master-mobile/ios/Flutter/Generated.xcconfig
+master-mobile/ios/Runner.xcworkspace/xcuserdata/
+master-mobile/ios/Runner.xcodeproj/xcuserdata/
+master-mobile/ios/Runner.xcodeproj/project.xcworkspace/xcuserdata/
+master-mobile/macos/Pods/
+master-mobile/linux/build/
+master-mobile/windows/build/
+master-mobile/web/build/
+master-mobile/coverage/
+master-mobile/pubspec.lock
+
+# Secrets / large binaries that should never be tracked
+*.apk
+*.aab
+*.ipa
+*.jks
+*.keystore
+*.pem
+*.key
+*.crt
+secrets.*

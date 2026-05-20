@@ -1,0 +1,9 @@
+{
+  "name": "master-sse",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "main": "server.js",
+  "dependencies": {
+    "ioredis": "^5.4.1"
+  }
+}

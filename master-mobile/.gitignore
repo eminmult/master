@@ -1,0 +1,37 @@
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+.fvm/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Generated
+**/*.g.dart
+**/*.freezed.dart
+lib/l10n/generated/
+
+# Symbolication / build artifacts
+*.symlink
+*.symbols.zip
+.DS_Store
+
+# Secrets
+.env
+.env.local
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+ios/firebase_app_id_file.json
+android/key.properties
+android/app/upload-keystore.jks
+**/*.p12
+**/firebase-service-account*.json
