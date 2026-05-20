@@ -8,6 +8,21 @@ import 'package:master_mobile/core/theme/design_tokens.dart';
 class AppTheme {
   AppTheme._();
 
+  /// Use iOS-style page transitions on every platform so users get the
+  /// edge-swipe-back gesture (drag from the left edge to pop) on Android too.
+  /// CupertinoPageTransitionsBuilder is the only Material builder that ships
+  /// with the back-swipe gesture detector wired in.
+  static const PageTransitionsTheme _pageTransitions = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.fuchsia: CupertinoPageTransitionsBuilder(),
+    },
+  );
+
   static ThemeData dark() {
     final base = ThemeData.dark(useMaterial3: true);
     final txt = GoogleFonts.spaceGroteskTextTheme(base.textTheme).apply(
@@ -28,6 +43,7 @@ class AppTheme {
         onSurface: HmColors.text,
         error: HmColors.danger,
       ),
+      pageTransitionsTheme: _pageTransitions,
       textTheme: txt,
       appBarTheme: AppBarTheme(
         backgroundColor: const Color(0xCC0A0A0A),
@@ -72,6 +88,7 @@ class AppTheme {
   static ThemeData light() {
     return ThemeData.light(useMaterial3: true).copyWith(
       textTheme: GoogleFonts.spaceGroteskTextTheme(),
+      pageTransitionsTheme: _pageTransitions,
     );
   }
 }

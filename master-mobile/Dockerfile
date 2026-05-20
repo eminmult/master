@@ -32,9 +32,9 @@ RUN dart run build_runner build --delete-conflicting-outputs
 RUN flutter gen-l10n
 
 # Compile-time API base URL. Override at build with --build-arg API_BASE_URL=...
-ARG API_BASE_URL=https://master.gasimov.az/api/v1
+ARG API_BASE_URL=https://itez.app/api/v1
 # Sub-path the bundle is served from. "/" for root, "/mobile/" when mounted
-# behind a reverse proxy at master.gasimov.az/mobile/.
+# behind a reverse proxy at itez.app/mobile-dev/.
 ARG BASE_HREF=/mobile/
 # Inject a visible loading screen + cache-busting into the generated
 # web/index.html BEFORE the build, so the user sees something while the

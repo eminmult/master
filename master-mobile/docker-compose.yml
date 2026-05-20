@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
       args:
         # Override at build to point the bundle at staging or local backend.
-        API_BASE_URL: ${API_BASE_URL:-https://master.gasimov.az/api/v1}
+        API_BASE_URL: ${API_BASE_URL:-https://itez.app/api/v1}
         # Sub-path the bundle is served from. Must match nginx location.
         BASE_HREF: ${BASE_HREF:-/mobile/}
         # Stamp every build with a unique ID so CF cache-busting query strings
@@ -23,7 +23,7 @@ services:
   # a tiny static HTTP server. Browser still needs a manual refresh — full
   # hot-reload is unavailable because `flutter run -d web-server` does not
   # support `--base-href`, so the bundle wouldn't load under /mobile-dev/.
-  # Reachable at https://master.gasimov.az/mobile-dev/.
+  # Reachable at https://itez.app/mobile-dev/.
   # Start with `docker compose --profile dev up -d master-mobile-dev`.
   master-mobile-dev:
     profiles: ["dev"]
@@ -78,7 +78,7 @@ services:
             --base-href=/mobile-dev/ \
             --no-tree-shake-icons \
             --pwa-strategy=none \
-            --dart-define=API_BASE_URL=https://master.gasimov.az/api/v1; then
+            --dart-define=API_BASE_URL=https://itez.app/api/v1; then
               # Cache-buster: stamp main.dart.js / canvaskit URLs with a fresh
               # timestamp on every rebuild so Cloudflare's edge cache (which
               # ignores our no-store hint until existing entries expire) is
