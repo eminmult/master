@@ -30,36 +30,23 @@ class UserProfileController extends Controller
                 'created_at' => $r->created_at,
             ]);
 
-        // Locale-aware SEO slug: "{localized-category-slug}-{first}-{last}-{id}".
+        // Canonical SEO slug: "{az-category-slug}-{first}-{last}-{id}".
+        // One URL across all locales — hybrid strategy.
         $locale = app()->getLocale();
         $primaryCat = $user->isMaster() && $user->masterProfile
             ? $user->masterProfile->load('masterCategories.category')
                 ->masterCategories->map(fn ($mc) => $mc->category)->filter()->first()
             : null;
         $slugParts = array_filter([
-            $primaryCat ? $primaryCat->slugFor($locale) : null,
+            $primaryCat?->slug,
             $user->first_name ? \Illuminate\Support\Str::slug($user->first_name) : null,
             $user->last_name ? \Illuminate\Support\Str::slug($user->last_name) : null,
             (string) $user->id,
         ]);
-        // Cross-locale slugs for hreflang. Only the category prefix varies.
-        $slugTranslations = [];
-        if ($primaryCat) {
-            $primaryTranslations = ['az' => $primaryCat->slug] + ($primaryCat->slug_translations ?: []);
-            foreach (['az', 'ru', 'en', 'tr', 'ar'] as $l) {
-                $slugTranslations[$l] = implode('-', array_filter([
-                    $primaryTranslations[$l] ?? $primaryCat->slug,
-                    $user->first_name ? \Illuminate\Support\Str::slug($user->first_name) : null,
-                    $user->last_name ? \Illuminate\Support\Str::slug($user->last_name) : null,
-                    (string) $user->id,
-                ]));
-            }
-        }
 
         $data = [
             'id' => $user->id,
             'slug' => implode('-', $slugParts),
-            'slug_translations' => $slugTranslations,
             'first_name' => $user->localized('first_name'),
             'last_name' => $user->localized('last_name'),
             'full_name' => $user->full_name,
@@ -93,7 +80,7 @@ class UserProfileController extends Controller
                 'languages' => $profile->languages,
                 'categories' => $cats->map(fn ($c) => [
                     'id' => $c->id,
-                    'slug' => $c->slugFor($locale),
+                    'slug' => $c->slug, // canonical
                     'name' => $c->nameFor($locale),
                     'icon_url' => $c->icon_url,
                 ])->values(),

@@ -79,39 +79,39 @@ class TranslationService
 
         $cacheKey = 'translate:' . md5($sourceLocale . '|' . $text);
         return Cache::remember($cacheKey, now()->addDays(30), function () use ($text, $sourceLocale, $targets) {
+            // ONE call per target locale instead of an all-locales JSON.
+            // The combined prompt routinely truncated the output JSON
+            // (especially when Arabic was included — denser tokens), which
+            // led to bad-JSON warnings and missing translations. Per-locale
+            // calls fit comfortably and let us retry the few that fail.
             $sourceName = self::LOCALE_NAMES[$sourceLocale] ?? $sourceLocale;
-            $targetList = array_map(fn($t) => self::LOCALE_NAMES[$t] . " ({$t})", $targets);
-            $targetStr = implode(', ', $targetList);
-
-            $prompt = "You are a professional translator for a home services marketplace. " .
-                "Translate the user-written text from {$sourceName} to: {$targetStr}. " .
-                "RULES:\n" .
-                "- Keep the tone natural and conversational (not formal legalese).\n" .
-                "- Preserve URLs, @mentions, #tags, numbers, emoji, and line breaks exactly.\n" .
-                "- Preserve technical terms (kilowatt, voltage, brand names) untranslated when appropriate.\n" .
-                "- Do NOT add commentary, notes, or extra quotes.\n" .
-                "- Return ONLY a strict JSON object keyed by the 2-letter ISO code, no markdown, no code fence.\n" .
-                "- Example output: {\"ru\":\"…\",\"en\":\"…\",\"tr\":\"…\",\"ar\":\"…\"}\n\n" .
-                "TEXT TO TRANSLATE: <<<{$text}>>>";
-
-            try {
-                $raw = $this->call($prompt);
-                $json = $this->extractJson($raw);
-                if (!is_array($json)) {
-                    Log::warning('translation_bad_json', ['raw' => substr($raw ?? '', 0, 500)]);
-                    return [];
-                }
-                $result = [];
-                foreach ($targets as $t) {
-                    if (!empty($json[$t]) && is_string($json[$t])) {
-                        $result[$t] = trim($json[$t]);
+            $result = [];
+            foreach ($targets as $t) {
+                $targetName = self::LOCALE_NAMES[$t] ?? $t;
+                $prompt = "You are a professional translator for itez.app, a home-services marketplace.\n"
+                    . "Translate the user-written text below from {$sourceName} to {$targetName}.\n"
+                    . "RULES:\n"
+                    . "- Keep the tone natural and conversational (not formal legalese).\n"
+                    . "- Preserve URLs, numbers, emoji and line breaks EXACTLY (do not collapse or add).\n"
+                    . "- Preserve brand names (GROHE, Bosch, Hansgrohe, etc.) untranslated.\n"
+                    . "- Output ONLY the translated text in {$targetName}. No quotes, no commentary.\n\n"
+                    . "TEXT:\n<<<\n{$text}\n>>>";
+                try {
+                    $raw = $this->call($prompt);
+                    $clean = is_string($raw) ? trim($raw) : '';
+                    // Detect runaway model loops (e.g. "Super peşəkar"x100) by
+                    // capping at 3× source length — translation should be
+                    // within ±30% normally.
+                    if ($clean === '' || mb_strlen($clean) > mb_strlen($text) * 3) {
+                        Log::warning('translation_skipped', ['target' => $t, 'reason' => $clean === '' ? 'empty' : 'runaway']);
+                        continue;
                     }
+                    $result[$t] = $clean;
+                } catch (\Throwable $e) {
+                    Log::warning('translation_failed', ['target' => $t, 'err' => $e->getMessage()]);
                 }
-                return $result;
-            } catch (\Throwable $e) {
-                Log::warning('translation_failed', ['err' => $e->getMessage(), 'source' => $sourceLocale]);
-                return [];
             }
+            return $result;
         });
     }
 
@@ -122,14 +122,17 @@ class TranslationService
 
         $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$key}";
 
-        $resp = Http::timeout(20)->retry(2, 500)->post($url, [
+        $resp = Http::timeout(60)->retry(3, 1500, throw: false)->post($url, [
             'contents' => [[
                 'parts' => [['text' => $prompt]],
             ]],
             'generationConfig' => [
                 'temperature' => 0.2,
                 'topP' => 0.9,
-                'maxOutputTokens' => 2048,
+                // Polished bios (~600 chars × 4 locales + Arabic's token-
+                // density tax) overflowed the previous 2048 cap and arrived
+                // truncated; 8192 fits comfortably even for long content.
+                'maxOutputTokens' => 8192,
             ],
         ]);
 

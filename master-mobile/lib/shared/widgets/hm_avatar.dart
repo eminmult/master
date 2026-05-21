@@ -23,12 +23,19 @@ class HmAvatar extends StatelessWidget {
     this.size = 48,
     this.ring = false,
     this.online = false,
+    this.heroTag,
   });
 
   final String? url;
   final double size;
   final bool ring;
   final bool online;
+
+  /// Optional Hero tag — wrap the avatar in a Hero so a list→detail transition
+  /// does a native iOS-style continuous transform. Pass a unique-per-entity
+  /// string like `'avatar-master-${master.id}'`. Two screens that use the
+  /// same tag participate in the same flight.
+  final Object? heroTag;
 
   @override
   Widget build(BuildContext context) {
@@ -62,12 +69,14 @@ class HmAvatar extends StatelessWidget {
           )
         : inner;
 
-    if (!online) return ringed;
+    final maybeHero = heroTag != null ? Hero(tag: heroTag!, child: ringed) : ringed;
+
+    if (!online) return maybeHero;
 
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        ringed,
+        maybeHero,
         Positioned(
           right: 0,
           bottom: 0,

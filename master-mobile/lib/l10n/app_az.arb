@@ -1398,5 +1398,12 @@
   "chat_sys_default": "Sistem mesajı",
   "order_status_pending_client": "Təsdiq gözlənilir",
   "order_status_pending_payment": "Ödəniş gözlənilir",
-  "order_timeline_payment_received": "Ödəniş qəbul edildi"
+  "order_timeline_payment_received": "Ödəniş qəbul edildi",
+  "error_page_not_found_title": "Səhifə tapılmadı",
+  "error_page_not_found_desc": "Bu link köhnəlmiş və ya yanlış ola bilər. Ana səhifədən istənilən xidməti aça bilərsiniz.",
+  "error_back_home": "Ana səhifəyə qayıt",
+  "guest_orders_title": "Sifarişləri görmək üçün daxil olun",
+  "guest_orders_body": "Sifariş tarixçəsi və aktiv sifarişlər yalnız daxil olduqdan sonra görünür.",
+  "guest_profile_title": "Profili açmaq üçün daxil olun",
+  "guest_profile_body": "Şəxsi məlumatlar, ünvanlar və ödəniş üsulları daxil olduqdan sonra mövcud olur."
 }

@@ -14,7 +14,6 @@ import 'package:master_mobile/features/master/data/masters_repository.dart';
 import 'package:master_mobile/features/orders/data/models/public_order.dart';
 import 'package:master_mobile/features/smart_search/presentation/smart_search_widget.dart';
 import 'package:master_mobile/shared/widgets/hm_avatar.dart';
-import 'package:master_mobile/shared/widgets/hm_bottom_nav.dart';
 import 'package:master_mobile/shared/widgets/hm_notification_bell.dart';
 import 'package:master_mobile/shared/widgets/hm_section_head.dart';
 
@@ -31,14 +30,13 @@ class HomePage extends ConsumerWidget {
     final isGuest = user == null;
     final avatarUrl = user?.avatarUrl;
 
-    return Scaffold(
-      backgroundColor: HmColors.bg,
-      body: Stack(
+    // No Scaffold here — the shell (HmShellPage) owns the Scaffold + bottom
+    // nav. Page content is just the body. Padding-bottom keeps the last list
+    // item clear of the floating nav pill.
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.only(bottom: 110),
         children: [
-          SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.only(bottom: 110),
-              children: [
                 // Header — avatar + Wolt-style address bar + bell
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
@@ -107,35 +105,9 @@ class HomePage extends ConsumerWidget {
                   onTap: (id) => context.push('/announcements/$id'),
                   onRetry: () => ref.invalidate(homeAnnouncementsProvider),
                 ),
-              ],
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: HmBottomNav(
-              active: HmTab.home,
-              onChanged: (t) => _onTab(context, t, isGuest),
-            ),
-          ),
         ],
       ),
     );
-  }
-
-  void _onTab(BuildContext context, HmTab tab, bool isGuest) {
-    switch (tab) {
-      case HmTab.home: break;
-      case HmTab.announcements: context.go('/announcements'); break;
-      // Protected tabs: when a guest taps them, push the auth gate instead of
-      // letting the global router redirect handle it (a redirect from go()
-      // wipes the stack, leaving nothing to swipe back to).
-      case HmTab.bookings:
-        isGuest ? context.push('/login?next=/orders') : context.go('/orders');
-        break;
-      case HmTab.profile:
-        isGuest ? context.push('/login?next=/profile') : context.go('/profile');
-        break;
-    }
   }
 }
 

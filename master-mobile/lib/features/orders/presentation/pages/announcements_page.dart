@@ -8,7 +8,6 @@ import 'package:master_mobile/features/categories/data/categories_repository.dar
 import 'package:master_mobile/features/orders/data/models/public_order.dart';
 import 'package:master_mobile/features/orders/data/orders_repository.dart';
 import 'package:master_mobile/shared/widgets/hm_avatar.dart';
-import 'package:master_mobile/shared/widgets/hm_bottom_nav.dart';
 import 'package:master_mobile/shared/widgets/hm_icon_button.dart';
 
 /// Public order feed — mirrors the website's `/orders` page. Lists open
@@ -115,25 +114,9 @@ class _AnnouncementsPageState extends ConsumerState<AnnouncementsPage> {
               ],
             ),
           ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: HmBottomNav(
-              active: HmTab.announcements,
-              onChanged: (t) => _onTab(context, t),
-            ),
-          ),
         ],
       ),
     );
-  }
-
-  void _onTab(BuildContext context, HmTab tab) {
-    switch (tab) {
-      case HmTab.home: context.go('/home'); break;
-      case HmTab.bookings: context.go('/orders'); break;
-      case HmTab.announcements: break;
-      case HmTab.profile: context.go('/profile'); break;
-    }
   }
 }
 

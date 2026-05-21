@@ -13,7 +13,6 @@ import 'package:master_mobile/features/categories/data/categories_repository.dar
 import 'package:master_mobile/features/orders/data/models/order.dart';
 import 'package:master_mobile/features/orders/data/orders_repository.dart';
 import 'package:master_mobile/shared/widgets/hm_avatar.dart';
-import 'package:master_mobile/shared/widgets/hm_bottom_nav.dart';
 import 'package:master_mobile/shared/widgets/hm_icon_button.dart';
 
 // --- Data providers --------------------------------------------------------
@@ -100,13 +99,6 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
               ),
             ),
           ),
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: HmBottomNav(
-            active: HmTab.bookings,
-            onChanged: (t) => _onTab(context, t),
-          ),
-        ),
       ]),
     );
   }
@@ -337,14 +329,6 @@ class _MyOrdersPageState extends ConsumerState<MyOrdersPage> {
     ));
   }
 
-  void _onTab(BuildContext context, HmTab tab) {
-    switch (tab) {
-      case HmTab.home: context.go('/home'); break;
-      case HmTab.bookings: break;
-      case HmTab.announcements: context.go('/announcements'); break;
-      case HmTab.profile: context.go('/profile'); break;
-    }
-  }
 }
 
 int _byUpdated(Order a, Order b) {

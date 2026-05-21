@@ -19,6 +19,7 @@ class HmColors {
 
   // Accent (yellow)
   static const accent = Color(0xFFFFFF00);
+  static const accentDark = Color(0xFFCA8A04); // gradient stop / hover state
   static const accentSoft = Color(0x1AFFFF00); // rgba(255,255,0,0.1)
   static const accentBorder = Color(0x33FFFF00); // rgba(255,255,0,0.2)
   static const accentGlow = Color(0x66FFFF00); // rgba(255,255,0,0.4)
@@ -64,6 +65,67 @@ class HmSpacing {
   static const lg = 20.0;
   static const xl = 24.0;
   static const xxl = 32.0;
+}
+
+/// Semantic colour layer — feature code should consume these names rather
+/// than the brand-specific HmColors aliases below. A future re-skin only
+/// needs to change the mapping in HmSem, leaving 80 feature files untouched.
+///
+/// Why both layers exist:
+///   * `HmColors` is the design-system primitive: 'accent' is yellow, full
+///     stop. The number of tokens stays low and rarely changes.
+///   * `HmSem` is the semantic role: 'primary' is whatever colour means
+///     "main action" today. Rebrand changes the role mapping; the role
+///     names in widgets keep working.
+class HmSem {
+  HmSem._();
+
+  // Surfaces
+  static const Color surface = HmColors.bg;
+  static const Color surfaceContainer = HmColors.surface;
+  static const Color surfaceVariant = HmColors.surface2;
+  static const Color outline = HmColors.border2;
+
+  // Primary brand action
+  static const Color primary = HmColors.accent;
+  static const Color onPrimary = Color(0xFF0A0A0A);
+  static const Color primaryContainer = HmColors.accentSoft;
+
+  // Text scale (by emphasis, not by hex)
+  static const Color onSurface = HmColors.text;
+  static const Color onSurfaceMuted = HmColors.text3;
+  static const Color onSurfaceFaint = HmColors.text4;
+  static const Color onSurfaceDisabled = HmColors.text5;
+
+  // Status (semantic, NOT brand)
+  static const Color success = HmColors.success;
+  static const Color error = HmColors.danger;
+  static const Color warning = Color(0xFFEAB308);
+  static const Color info = Color(0xFF3B82F6);
+}
+
+/// Typography scale — feature code uses these names, never raw TextStyle().
+/// Roles match Material 3 type roles so we slot into MaterialApp themeData
+/// without contortions if/when we adopt Material You theming.
+class HmTextStyles {
+  HmTextStyles._();
+
+  static const TextStyle displayHero = TextStyle(
+      fontSize: 38, fontWeight: FontWeight.w800, letterSpacing: -1.2, height: 1.1);
+  static const TextStyle display = TextStyle(
+      fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -1.0, height: 1.15);
+  static const TextStyle headline = TextStyle(
+      fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.3, height: 1.25);
+  static const TextStyle title = TextStyle(
+      fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: -0.2, height: 1.3);
+  static const TextStyle body = TextStyle(
+      fontSize: 14, fontWeight: FontWeight.w500, height: 1.55);
+  static const TextStyle bodyMuted = TextStyle(
+      fontSize: 14, fontWeight: FontWeight.w500, color: HmColors.text4, height: 1.55);
+  static const TextStyle caption = TextStyle(
+      fontSize: 12, fontWeight: FontWeight.w600, color: HmColors.text4, letterSpacing: 0.2);
+  static const TextStyle button = TextStyle(
+      fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: 0.1);
 }
 
 /// Drop shadows reused across components.

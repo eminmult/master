@@ -6,6 +6,7 @@ import 'package:master_mobile/core/auth/auth_controller.dart';
 import 'package:master_mobile/core/i18n/locale_controller.dart';
 import 'package:master_mobile/core/routing/router.dart';
 import 'package:master_mobile/core/theme/app_theme.dart';
+import 'package:master_mobile/core/ui/snackbar_service.dart';
 import 'package:master_mobile/features/calls/data/call_service.dart';
 import 'package:master_mobile/features/calls/presentation/call_overlay.dart';
 import 'package:master_mobile/features/realtime/sse_client.dart';
@@ -39,6 +40,9 @@ class MasterApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Master.az',
       debugShowCheckedModeBanner: false,
+      // SnackbarService routes through this key, so anywhere in the app can
+      // pop a snackbar without grabbing a BuildContext-bound messenger.
+      scaffoldMessengerKey: ref.watch(scaffoldMessengerKeyProvider),
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: ThemeMode.dark,
@@ -56,29 +60,33 @@ class MasterApp extends ConsumerWidget {
         // Android hardware back button policy:
         // - Deep route (router can pop) → pop one step (matches edge-swipe).
         // - Tab root (/orders, /profile, /announcements, /categories) → /home.
-        // - /home or / → return false so the OS handles it (minimize).
+        // - /home or / → minimise the app via SystemNavigator.pop.
         //
-        // We use BackButtonListener instead of a top-level PopScope because
-        // PopScope at MaterialApp.builder level sits OUTSIDE the GoRouter
-        // Navigator, so its onPopInvoked callback was not firing on Flutter
-        // 3.24+ — the OS back went straight to the platform handler and the
-        // app exited. BackButtonListener intercepts the platform event before
-        // the navigator gets it and lets us route manually.
-        return BackButtonListener(
-          onBackButtonPressed: () async {
+        // PopScope is the right tool here even though we're at MaterialApp.
+        // builder level (above the navigator). BackButtonListener tried to
+        // look up Router via an ancestor and crashed with a null-check
+        // exception — the Router widget lives in our SUBTREE, not above us.
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, _) {
+            if (didPop) return;
             if (router.canPop()) {
               router.pop();
-              return true; // consumed
+              return;
             }
             final loc = router.routerDelegate.currentConfiguration.uri.toString();
             if (loc == '/home' || loc == '/') {
-              return false; // let OS minimize the app
+              SystemNavigator.pop();
+            } else {
+              router.go('/home');
             }
-            router.go('/home');
-            return true;
           },
+          // Stack needs at least one non-positioned child to compute its size;
+          // when MaterialApp passes a null child during route transitions we
+          // fall back to a sized-box placeholder so the call overlay still
+          // has somewhere to render.
           child: Stack(children: [
-            if (child != null) child,
+            child ?? const SizedBox.expand(),
             const Positioned.fill(child: CallOverlay()),
           ]),
         );

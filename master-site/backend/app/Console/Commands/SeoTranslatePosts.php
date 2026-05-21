@@ -70,13 +70,29 @@ class SeoTranslatePosts extends Command
                 continue;
             }
 
+            // Every translation shares the source row's group_id so hreflang
+            // and the language switcher can hop between localized URLs.
+            $groupId = $source->group_id ?: (string) \Illuminate\Support\Str::uuid();
+            if (!$source->group_id) {
+                $source->forceFill(['group_id' => $groupId])->saveQuietly();
+            }
             foreach ($missing as $target) {
                 try {
                     $translated = $this->translateOne($source, $target, $key);
+                    // Build a locale-specific slug from the translated title.
+                    // Falls back to source slug when title is unavailable.
+                    $translatedSlug = isset($translated['title']) && $translated['title']
+                        ? \Illuminate\Support\Str::slug($translated['title'])
+                        : $source->slug;
+                    if (!$translatedSlug) $translatedSlug = $source->slug;
                     if (!$this->option('dry-run')) {
+                        // Unique constraint is (slug, locale), so we can safely
+                        // upsert keyed on (group_id, locale) since group + locale
+                        // is unique by construction.
                         Post::updateOrCreate(
-                            ['slug' => $slug, 'locale' => $target],
+                            ['group_id' => $groupId, 'locale' => $target],
                             [
+                                'slug' => $translatedSlug,
                                 'title' => $translated['title'] ?? $source->title,
                                 'excerpt' => $translated['excerpt'] ?? $source->excerpt,
                                 'body_md' => $translated['body_md'] ?? $source->body_md,
@@ -86,7 +102,7 @@ class SeoTranslatePosts extends Command
                             ],
                         );
                     }
-                    $this->info(" {$slug} [{$target}] ✓");
+                    $this->info(" {$slug} [{$target}] → {$translatedSlug} ✓");
                 } catch (\Throwable $e) {
                     Log::warning('seo:translate-posts failed', [
                         'slug' => $slug, 'target' => $target, 'err' => $e->getMessage(),

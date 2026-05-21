@@ -68,18 +68,13 @@ class MasterListController extends Controller
         if ($categoryId = $request->query('category_id')) {
             $query->whereHas('masterCategories', fn($q) => $q->where('category_id', $categoryId));
         } elseif ($categorySlug = $request->query('category_slug')) {
-            // Match the canonical AZ slug OR any per-locale slug stored in
-            // slug_translations. Without the JSONB-scan branch a URL like
-            // /ru/category/santehnik (Russian slug) wouldn't find category 1
-            // (canonical slug "santexnik") and the listing came back empty.
+            // Canonical slug only — URLs use the AZ slug across every
+            // locale (hybrid strategy: localize content, not URLs). Legacy
+            // per-locale URLs are still resolved by Category::resolveRouteBinding
+            // and 301-redirected to the canonical path by the frontend page.
             $query->whereHas(
                 'masterCategories.category',
-                fn ($q) => $q
-                    ->where('slug', $categorySlug)
-                    ->orWhereRaw(
-                        "EXISTS (SELECT 1 FROM jsonb_each_text(slug_translations) WHERE value = ?)",
-                        [$categorySlug],
-                    ),
+                fn ($q) => $q->where('slug', $categorySlug),
             );
         }
 
@@ -147,19 +142,22 @@ class MasterListController extends Controller
                 );
             }
 
-            // Locale-aware slug: "{localized-category-slug}-{first}-{last}-{id}"
+            // Canonical slug — one URL across all locales. Names stay in
+            // the master's source language inside the URL (e.g. "vuqar"
+            // → "vuqar" for everyone). Page CONTENT renders in visitor's
+            // language; URL doesn't change. See projectCategory() comment.
             $primaryCat = $cats->first();
             $slugParts = array_filter([
-                $primaryCat ? $primaryCat->slugFor($locale) : null,
+                $primaryCat?->slug,
                 $user->first_name ? \Illuminate\Support\Str::slug($user->first_name) : null,
                 $user->last_name ? \Illuminate\Support\Str::slug($user->last_name) : null,
                 (string) $user->id,
             ]);
 
-            // Project localized category names alongside originals.
+            // Localized name alongside canonical slug.
             $catsOut = $cats->map(fn ($c) => [
                 'id' => $c->id,
-                'slug' => $c->slugFor($locale),
+                'slug' => $c->slug, // canonical
                 'name' => $c->nameFor($locale),
                 'icon_url' => $c->icon_url,
             ])->values();
@@ -212,32 +210,16 @@ class MasterListController extends Controller
         $cats = $profile->masterCategories->map(fn($mc) => $mc->category)->filter()->unique('id')->values();
         $locale = app()->getLocale();
         $primaryCat = $cats->first();
+        // Canonical slug across all locales — hybrid strategy.
         $slugParts = array_filter([
-            $primaryCat ? $primaryCat->slugFor($locale) : null,
+            $primaryCat?->slug,
             $user->first_name ? \Illuminate\Support\Str::slug($user->first_name) : null,
             $user->last_name ? \Illuminate\Support\Str::slug($user->last_name) : null,
             (string) $user->id,
         ]);
-        // Per-locale master slugs (drives hreflang alternates on the SSR'd
-        // master page). Only the category prefix changes per language; first
-        // / last names stay ASCII-Latin and the id-suffix is invariant.
-        $slugTranslations = [];
-        if ($primaryCat) {
-            $primaryTranslations = ['az' => $primaryCat->slug] + ($primaryCat->slug_translations ?: []);
-            foreach (['az', 'ru', 'en', 'tr', 'ar'] as $l) {
-                $catPart = $primaryTranslations[$l] ?? $primaryCat->slug;
-                $slugTranslations[$l] = implode('-', array_filter([
-                    $catPart,
-                    $user->first_name ? \Illuminate\Support\Str::slug($user->first_name) : null,
-                    $user->last_name ? \Illuminate\Support\Str::slug($user->last_name) : null,
-                    (string) $user->id,
-                ]));
-            }
-        }
         $catsOut = $cats->map(fn ($c) => [
             'id' => $c->id,
-            'slug' => $c->slugFor($locale),
-            'slug_translations' => ['az' => $c->slug] + ($c->slug_translations ?: []),
+            'slug' => $c->slug,
             'name' => $c->nameFor($locale),
             'icon_url' => $c->icon_url,
             'base_price' => $c->pivot->base_price ?? null,
@@ -247,7 +229,6 @@ class MasterListController extends Controller
             'master' => [
                 'id' => $user->id,
                 'slug' => implode('-', $slugParts),
-                'slug_translations' => $slugTranslations,
                 'first_name' => $user->localized('first_name'),
                 'last_name' => $user->localized('last_name'),
                 'full_name' => $user->full_name,

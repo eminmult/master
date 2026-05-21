@@ -1398,5 +1398,12 @@
   "chat_sys_default": "Sistem mesajı",
   "order_status_pending_client": "Onay bekleniyor",
   "order_status_pending_payment": "Ödeme bekleniyor",
-  "order_timeline_payment_received": "Ödeme alındı"
+  "order_timeline_payment_received": "Ödeme alındı",
+  "error_page_not_found_title": "Sayfa bulunamadı",
+  "error_page_not_found_desc": "Bu bağlantı eski veya hatalı olabilir. Tüm hizmetlere ana sayfadan ulaşabilirsiniz.",
+  "error_back_home": "Ana sayfaya dön",
+  "guest_orders_title": "Siparişleri görmek için giriş yapın",
+  "guest_orders_body": "Sipariş geçmişi ve aktif siparişler giriş yaptıktan sonra görünür.",
+  "guest_profile_title": "Profili açmak için giriş yapın",
+  "guest_profile_body": "Kişisel bilgiler, adresler ve ödeme yöntemleri giriş yaptıktan sonra kullanılabilir."
 }

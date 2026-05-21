@@ -5,11 +5,11 @@ import 'package:master_mobile/core/auth/auth_controller.dart';
 import 'package:master_mobile/core/i18n/locale_controller.dart';
 import 'package:master_mobile/core/theme/design_tokens.dart';
 import 'package:master_mobile/features/addresses/data/addresses_repository.dart';
+import 'package:master_mobile/features/master/data/masters_repository.dart';
 import 'package:master_mobile/features/auth/data/models/user.dart';
 import 'package:master_mobile/features/user_profile/data/user_profile_repository.dart';
 import 'package:master_mobile/features/wallet/data/wallet_repository.dart';
 import 'package:master_mobile/shared/widgets/hm_avatar.dart';
-import 'package:master_mobile/shared/widgets/hm_bottom_nav.dart';
 import 'package:master_mobile/shared/widgets/hm_icon_button.dart';
 
 /// Self-profile dashboard. Builds a single page that serves both roles —
@@ -123,25 +123,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               ),
             ),
           ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: HmBottomNav(
-              active: HmTab.profile,
-              onChanged: (t) => _onTab(context, t),
-            ),
-          ),
         ],
       ),
     );
-  }
-
-  void _onTab(BuildContext context, HmTab tab) {
-    switch (tab) {
-      case HmTab.home: context.go('/home'); break;
-      case HmTab.bookings: context.go('/orders'); break;
-      case HmTab.announcements: context.go('/announcements'); break;
-      case HmTab.profile: break;
-    }
   }
 }
 
@@ -760,11 +744,9 @@ class _MasterPublicCard extends StatelessWidget {
           k: loc.profile_work_radius,
           v: '$radius ${loc.profile_km_short}'));
     }
-    items.add(_KV(
-        icon: accepting ? Icons.toggle_on_rounded : Icons.toggle_off_rounded,
-        k: loc.profile_accepting_orders,
-        v: accepting ? loc.profile_yes : loc.profile_no,
-        valueColor: accepting ? HmColors.success : HmColors.text5));
+    // Active toggle — the website's header had this; mobile only showed
+    // a static "Yes/No" cell. Wired to PUT /master/status (online|offline).
+    items.add(_AcceptingToggleRow(initial: accepting));
 
     if (items.isEmpty) return const SizedBox.shrink();
 
@@ -787,6 +769,66 @@ class _MasterPublicCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Interactive online/offline toggle for masters. Mirrors the website
+/// header switch — PUT /master/status with online|offline. Optimistic UI:
+/// flip immediately, snap back on API failure.
+class _AcceptingToggleRow extends ConsumerStatefulWidget {
+  const _AcceptingToggleRow({required this.initial});
+  final bool initial;
+  @override
+  ConsumerState<_AcceptingToggleRow> createState() => _AcceptingToggleRowState();
+}
+
+class _AcceptingToggleRowState extends ConsumerState<_AcceptingToggleRow> {
+  late bool _on = widget.initial;
+  bool _busy = false;
+
+  Future<void> _toggle(bool next) async {
+    if (_busy) return;
+    setState(() { _on = next; _busy = true; });
+    try {
+      await ref.read(mastersRepositoryProvider).setStatus(next ? 'online' : 'offline');
+      // Refresh the cached user so other surfaces (header chip, online dot)
+      // see the new state without waiting for the next /auth/me poll.
+      await ref.read(authStateProvider.notifier).refreshUser();
+    } catch (_) {
+      if (mounted) setState(() => _on = !next); // snap back on failure
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(children: [
+        Icon(_on ? Icons.toggle_on_rounded : Icons.toggle_off_rounded,
+            size: 16, color: _on ? HmColors.success : HmColors.text5),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(loc.profile_accepting_orders,
+              style: const TextStyle(fontSize: 13, color: HmColors.text4)),
+        ),
+        if (_busy)
+          const Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: SizedBox(
+              width: 14, height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2, color: HmColors.accent),
+            ),
+          ),
+        Switch.adaptive(
+          value: _on,
+          onChanged: _busy ? null : _toggle,
+          activeColor: HmColors.success,
+        ),
+      ]),
     );
   }
 }

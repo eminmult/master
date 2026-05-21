@@ -651,7 +651,7 @@ class _MessageRow extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: const LinearGradient(
                   begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                  colors: [HmColors.accent, Color(0xFFCA8A04)],
+                  colors: [HmColors.accent, HmColors.accentDark],
                 ),
                 border: Border.all(color: HmColors.accentBorder),
               ),

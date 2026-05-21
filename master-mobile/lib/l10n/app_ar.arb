@@ -1398,5 +1398,12 @@
   "chat_sys_default": "رسالة نظامية",
   "order_status_pending_client": "بانتظار التأكيد",
   "order_status_pending_payment": "بانتظار الدفع",
-  "order_timeline_payment_received": "تم استلام الدفع"
+  "order_timeline_payment_received": "تم استلام الدفع",
+  "error_page_not_found_title": "الصفحة غير موجودة",
+  "error_page_not_found_desc": "قد يكون هذا الرابط قديماً أو غير صحيح. يمكنك الوصول إلى جميع الخدمات من الصفحة الرئيسية.",
+  "error_back_home": "العودة إلى الرئيسية",
+  "guest_orders_title": "سجّل الدخول لعرض طلباتك",
+  "guest_orders_body": "يتوفر سجل الطلبات والطلبات النشطة بعد تسجيل الدخول.",
+  "guest_profile_title": "سجّل الدخول لفتح ملفك الشخصي",
+  "guest_profile_body": "تتوفر البيانات الشخصية والعناوين وطرق الدفع بعد تسجيل الدخول."
 }

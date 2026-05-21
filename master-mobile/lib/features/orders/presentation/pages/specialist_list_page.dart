@@ -7,7 +7,6 @@ import 'package:master_mobile/core/theme/design_tokens.dart';
 import 'package:master_mobile/features/categories/data/categories_repository.dart';
 import 'package:master_mobile/features/master/data/masters_repository.dart';
 import 'package:master_mobile/shared/widgets/hm_avatar.dart';
-import 'package:master_mobile/shared/widgets/hm_bottom_nav.dart';
 import 'package:master_mobile/shared/widgets/hm_icon_button.dart';
 
 /// Resolves the slug from the URL into a backend `category_id` so the
@@ -119,13 +118,6 @@ class _SpecialistListPageState extends ConsumerState<SpecialistListPage> {
               ],
             ),
           ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: HmBottomNav(
-              active: HmTab.announcements,
-              onChanged: (t) => _onTab(context, t),
-            ),
-          ),
         ],
       ),
     );
@@ -149,14 +141,6 @@ class _SpecialistListPageState extends ConsumerState<SpecialistListPage> {
     }).toList();
   }
 
-  void _onTab(BuildContext context, HmTab tab) {
-    switch (tab) {
-      case HmTab.home: context.go('/home'); break;
-      case HmTab.bookings: context.go('/orders'); break;
-      case HmTab.announcements: context.go('/announcements'); break;
-      case HmTab.profile: context.go('/profile'); break;
-    }
-  }
 }
 
 class _SpecialistCard extends StatelessWidget {

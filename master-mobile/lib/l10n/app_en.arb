@@ -1433,5 +1433,12 @@
   "chat_sys_default": "System message",
   "order_status_pending_client": "Awaiting confirmation",
   "order_status_pending_payment": "Awaiting payment",
-  "order_timeline_payment_received": "Payment received"
+  "order_timeline_payment_received": "Payment received",
+  "error_page_not_found_title": "Page not found",
+  "error_page_not_found_desc": "This link may be outdated or malformed. Every service is reachable from the home screen.",
+  "error_back_home": "Back to home",
+  "guest_orders_title": "Sign in to view your orders",
+  "guest_orders_body": "Order history and active jobs are available once you sign in.",
+  "guest_profile_title": "Sign in to access your profile",
+  "guest_profile_body": "Personal details, addresses and payment methods are available once you sign in."
 }

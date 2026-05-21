@@ -25,23 +25,48 @@ class PostController extends Controller
     public function show(string $slug): JsonResponse
     {
         $locale = app()->getLocale();
-        // Prefer the requested locale; if the post hasn't been translated
-        // there yet, fall back to any other published version so the URL
-        // doesn't 404 mid-rollout. Order puts canonical AZ first, then EN, RU.
-        $fallbackOrder = array_unique([$locale, 'az', 'en', 'ru', 'tr', 'ar']);
-        $post = null;
-        foreach ($fallbackOrder as $l) {
-            $post = Post::query()
-                ->where('slug', $slug)
-                ->where('locale', $l)
-                ->whereNotNull('published_at')
-                ->where('published_at', '<=', now())
-                ->with('author:id,first_name,last_name,avatar_url')
-                ->first();
-            if ($post) break;
+        // Direct match: requested locale + slug. The common path.
+        $post = Post::query()
+            ->where('slug', $slug)
+            ->where('locale', $locale)
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now())
+            ->with('author:id,first_name,last_name,avatar_url')
+            ->first();
+        // Slug from a different locale on this URL — find the group and
+        // hand back the current-locale row so the page renders in the
+        // visitor's language. The frontend uses post.slug to redirect to
+        // the canonical localized URL.
+        if (!$post) {
+            $other = Post::where('slug', $slug)->whereNotNull('published_at')->first();
+            if ($other && $other->group_id) {
+                $post = Post::where('group_id', $other->group_id)
+                    ->where('locale', $locale)
+                    ->whereNotNull('published_at')
+                    ->where('published_at', '<=', now())
+                    ->with('author:id,first_name,last_name,avatar_url')
+                    ->first();
+            }
+            // Still nothing in current locale → graceful fallback to any
+            // published version so URLs don't 404 mid-translation rollout.
+            if (!$post && $other) {
+                $post = $other->load('author:id,first_name,last_name,avatar_url');
+            }
         }
         if (!$post) abort(404);
-        return response()->json(['post' => $post]);
+
+        // Per-locale slug map so the frontend can build hreflang alternates
+        // and the language switcher points at the right localised URL.
+        $slugTranslations = [];
+        if ($post->group_id) {
+            $slugTranslations = Post::where('group_id', $post->group_id)
+                ->whereNotNull('published_at')
+                ->where('published_at', '<=', now())
+                ->pluck('slug', 'locale')->all();
+        }
+        $data = $post->toArray();
+        $data['slug_translations'] = $slugTranslations;
+        return response()->json(['post' => $data]);
     }
 
     // Admin-only create/update. Reuses the existing role middleware mounted in

@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Jobs\TranslateContentJob;
 use App\Models\MasterProfile;
 use App\Models\MasterSkill;
+use App\Models\Order;
 use App\Models\User;
 use Illuminate\Console\Command;
 
@@ -33,6 +34,7 @@ class BackfillAllTranslations extends Command
             ['class' => User::class, 'fields' => ['first_name', 'last_name'], 'query' => fn () => User::query()->whereNotNull('first_name')],
             ['class' => MasterProfile::class, 'fields' => ['description', 'city', 'district'], 'query' => fn () => MasterProfile::query()],
             ['class' => MasterSkill::class, 'fields' => ['name'], 'query' => fn () => MasterSkill::query()->whereNotNull('name')],
+            ['class' => Order::class, 'fields' => ['description', 'comment'], 'query' => fn () => Order::query()->whereNotNull('description')],
         ];
 
         foreach ($models as $m) {

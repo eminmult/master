@@ -78,4 +78,15 @@ class MastersRepository {
       throw ApiException.fromDio(e);
     }
   }
+
+  /// Flip the master between accepting and not-accepting orders.
+  /// Mirrors the website's online/offline switch in the header — same
+  /// /master/status endpoint, mobile just lacked a UI for it.
+  Future<void> setStatus(String status) async {
+    try {
+      await _dio.put<Map<String, dynamic>>('/master/status', data: {'status': status});
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
 }

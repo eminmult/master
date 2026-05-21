@@ -15,6 +15,7 @@ import 'package:master_mobile/core/auth/auth_controller.dart';
 import 'package:master_mobile/core/i18n/category_helpers.dart';
 import 'package:master_mobile/core/i18n/locale_controller.dart';
 import 'package:master_mobile/core/i18n/order_helpers.dart';
+import 'package:master_mobile/core/theme/brand_colors.dart';
 import 'package:master_mobile/core/theme/design_tokens.dart';
 import 'package:master_mobile/features/applications/data/applications_repository.dart';
 import 'package:master_mobile/features/calls/data/call_service.dart';
@@ -3443,15 +3444,15 @@ class _NavigationSheet extends StatelessWidget {
               style: const TextStyle(fontSize: 12.5, color: HmColors.text4)),
           const SizedBox(height: 16),
           _NavApp(label: 'Google Maps', icon: Icons.map_rounded,
-              iconBg: const Color(0xFFE8F5E9), iconFg: const Color(0xFF1A73E8),
+              iconBg: BrandColors.googleMapsBg, iconFg: BrandColors.googleMapsFg,
               url: _googleUrl(lat, lng, addr)),
           const SizedBox(height: 8),
           _NavApp(label: 'Yandex Maps', icon: Icons.location_on_rounded,
-              iconBg: const Color(0xFFFFF3E0), iconFg: const Color(0xFFFC3F1D),
+              iconBg: BrandColors.yandexMapsBg, iconFg: BrandColors.yandexMapsFg,
               url: _yandexUrl(lat, lng, addr)),
           const SizedBox(height: 8),
           _NavApp(label: 'Waze', icon: Icons.navigation_rounded,
-              iconBg: const Color(0xFFE0F7FA), iconFg: const Color(0xFF33CCFF),
+              iconBg: BrandColors.wazeBg, iconFg: BrandColors.wazeFg,
               url: _wazeUrl(lat, lng, addr)),
           const SizedBox(height: 8),
           _NavApp(label: 'Apple Maps', icon: Icons.apple_rounded,

@@ -117,7 +117,7 @@ class _AvatarState extends State<_Avatar> with SingleTickerProviderStateMixin {
       alignment: Alignment.center,
       child: widget.avatarUrl == null || widget.avatarUrl!.isEmpty
           ? Text(widget.initial,
-              style: const TextStyle(color: Colors.black, fontSize: 38, fontWeight: FontWeight.w800))
+              style: HmTextStyles.displayHero.copyWith(color: Colors.black))
           : null,
     );
     if (!widget.pulsing) return core;

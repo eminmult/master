@@ -126,8 +126,7 @@ class _BalanceCard extends StatelessWidget {
         Text(loc.wallet_balance,
             style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.8, color: HmColors.text4)),
         const SizedBox(height: 8),
-        Text('$amount $currency',
-            style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: -1.2)),
+        Text('$amount $currency', style: HmTextStyles.displayHero),
         const SizedBox(height: 14),
         SizedBox(
           height: 40,

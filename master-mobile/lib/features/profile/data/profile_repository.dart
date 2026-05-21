@@ -53,9 +53,22 @@ class ProfileRepository {
     }
   }
 
+  /// Triggers backend GDPR-style export. Server emails a download link to
+  /// the account email, so there's no payload to return — success means the
+  /// job is enqueued.
+  Future<void> exportData() async {
+    try {
+      await _dio.get<Map<String, dynamic>>('/me/export');
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
   Future<void> deleteAccount() async {
     try {
-      await _dio.post<void>('/me/delete');
+      // Backend requires confirm:DELETE token to guard against accidental
+      // taps; mirrors the website's "type DELETE to confirm" dialog.
+      await _dio.post<void>('/me/delete', data: {'confirm': 'DELETE'});
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
     }

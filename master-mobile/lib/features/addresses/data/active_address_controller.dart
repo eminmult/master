@@ -14,11 +14,18 @@ final sharedPrefsProvider = Provider<SharedPreferences>((_) {
 /// Tracks which of the user's saved addresses is the "active" one — the
 /// one shown in the home header and used as the default for new orders.
 /// Persisted to SharedPreferences so the choice survives across sessions.
-class ActiveAddressNotifier extends StateNotifier<int?> {
-  ActiveAddressNotifier(this._prefs) : super(_prefs.getInt(_key));
-
+///
+/// Migrated to Riverpod 2.5+ Notifier from StateNotifier (deprecated path).
+class ActiveAddressNotifier extends Notifier<int?> {
   static const _key = 'active_address_id';
-  final SharedPreferences _prefs;
+
+  late final SharedPreferences _prefs;
+
+  @override
+  int? build() {
+    _prefs = ref.watch(sharedPrefsProvider);
+    return _prefs.getInt(_key);
+  }
 
   Future<void> setActive(int id) async {
     state = id;
@@ -32,9 +39,7 @@ class ActiveAddressNotifier extends StateNotifier<int?> {
 }
 
 final activeAddressIdProvider =
-    StateNotifierProvider<ActiveAddressNotifier, int?>((ref) {
-  return ActiveAddressNotifier(ref.watch(sharedPrefsProvider));
-});
+    NotifierProvider<ActiveAddressNotifier, int?>(ActiveAddressNotifier.new);
 
 /// Resolved active Address: respects the user's explicit choice, falls
 /// back to `is_default` from the server-side list, then to the first

@@ -36,11 +36,9 @@ class SmartSearchController extends Controller
 
         $result = $service->classify($description, $imageB64, $imageMime);
 
-        $categorySlug = null;
-        if ($result['category_id']) {
-            $cat = \App\Models\Category::find($result['category_id']);
-            $categorySlug = $cat?->slugFor(app()->getLocale());
-        }
+        $categorySlug = $result['category_id']
+            ? \App\Models\Category::where('id', $result['category_id'])->value('slug')
+            : null;
 
         return response()->json([
             'category_id' => $result['category_id'],

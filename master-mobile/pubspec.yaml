@@ -85,6 +85,9 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
 
+  # Test helpers
+  mocktail: ^1.0.4
+
   # Code generation
   build_runner: ^2.4.13
   freezed: ^2.5.7
@@ -98,6 +101,7 @@ flutter:
   generate: true   # enables flutter_gen_l10n for ARB → Dart
   assets:
     - assets/images/
+    - assets/flags/
 
   # Fonts (placeholder — drop your TTFs into assets/fonts and uncomment)
   # fonts:

@@ -3,11 +3,13 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:master_mobile/core/api/api_client.dart';
+import 'package:master_mobile/core/api/api_exception.dart';
 import 'package:master_mobile/core/auth/auth_controller.dart';
 import 'package:master_mobile/core/i18n/locale_controller.dart';
 import 'package:master_mobile/core/i18n/locales_repository.dart';
 import 'package:master_mobile/core/theme/design_tokens.dart';
+import 'package:master_mobile/core/ui/snackbar_service.dart';
+import 'package:master_mobile/features/profile/data/profile_repository.dart';
 import 'package:master_mobile/shared/widgets/hm_icon_button.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -104,21 +106,12 @@ class SettingsPage extends ConsumerWidget {
 
   Future<void> _exportData(BuildContext context, WidgetRef ref) async {
     final loc = context.l10n;
+    final snack = ref.read(snackbarServiceProvider);
     try {
-      final dio = ref.read(apiClientProvider);
-      await dio.get<Map<String, dynamic>>('/me/export');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(loc.profile_export_done),
-          backgroundColor: HmColors.success,
-        ));
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('$e'), backgroundColor: HmColors.danger,
-        ));
-      }
+      await ref.read(profileRepositoryProvider).exportData();
+      snack.showSuccess(loc.profile_export_done);
+    } on ApiException catch (e) {
+      snack.showError(e.message);
     }
   }
 
@@ -141,16 +134,12 @@ class SettingsPage extends ConsumerWidget {
       ),
     );
     if (confirm != true) return;
+    final snack = ref.read(snackbarServiceProvider);
     try {
-      final dio = ref.read(apiClientProvider);
-      await dio.post<void>('/me/delete', data: {'confirm': 'DELETE'});
+      await ref.read(profileRepositoryProvider).deleteAccount();
       await ref.read(authStateProvider.notifier).logout();
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('$e'), backgroundColor: HmColors.danger,
-        ));
-      }
+    } on ApiException catch (e) {
+      snack.showError(e.message);
     }
   }
 }

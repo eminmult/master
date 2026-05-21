@@ -39,6 +39,12 @@ class OrderController extends Controller
         $photos = $data['photos'] ?? [];
         unset($data['preferred_master_id'], $data['photos']);
 
+        // Stamp the source locale on every new order so the AI cleanup/
+        // translation pass knows which language the client wrote in (rather
+        // than re-running language detection). Falls back to app locale if
+        // the request didn't carry an Accept-Language header.
+        $data['content_locale'] = app()->getLocale();
+
         // If preferred master — send request, waiting for master to accept
         if ($preferredMasterId) {
             $order = Order::create([
@@ -181,7 +187,7 @@ class OrderController extends Controller
             return [
                 'id' => $order->id,
                 'category' => $order->category,
-                'description' => $order->description,
+                'description' => $order->localized('description'),
                 'district' => $order->entrance ? null : explode(',', $order->full_address)[0] ?? '',
                 'urgency' => $order->urgency,
                 'estimated_budget' => $order->estimated_budget,
@@ -257,7 +263,7 @@ class OrderController extends Controller
                     'name' => $o->category->name,
                     'icon_url' => $o->category->icon_url,
                 ] : null,
-                'description' => $o->description,
+                'description' => $o->localized('description'),
                 'district' => trim($district),
                 'urgency' => $o->urgency,
                 'estimated_budget' => $o->estimated_budget,
@@ -322,13 +328,13 @@ class OrderController extends Controller
                 'id' => $order->id,
                 'category' => $order->category,
                 'subcategory' => $order->subcategory,
-                'description' => $order->description,
+                'description' => $order->localized('description'),
                 'district' => trim($district),
                 'urgency' => $order->urgency,
                 'estimated_budget' => $order->estimated_budget,
                 'desired_time' => $order->desired_time,
                 'scheduled_at' => $order->scheduled_at,
-                'comment' => $order->comment,
+                'comment' => $order->localized('comment'),
                 'photos' => $order->photos->map(fn($p) => ['id' => $p->id, 'url' => $p->url]),
                 'client' => $order->client ? [
                     'id' => $order->client->id,

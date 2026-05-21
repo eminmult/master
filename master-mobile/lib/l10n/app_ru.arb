@@ -1398,5 +1398,12 @@
   "chat_sys_default": "Системное сообщение",
   "order_status_pending_client": "Ожидает подтверждения",
   "order_status_pending_payment": "Ожидает оплаты",
-  "order_timeline_payment_received": "Оплата получена"
+  "order_timeline_payment_received": "Оплата получена",
+  "error_page_not_found_title": "Страница не найдена",
+  "error_page_not_found_desc": "Возможно, ссылка устарела или содержит ошибку. С главной страницы доступны все услуги.",
+  "error_back_home": "На главную",
+  "guest_orders_title": "Войдите, чтобы видеть заказы",
+  "guest_orders_body": "История заказов и активные заявки доступны только после входа в аккаунт.",
+  "guest_profile_title": "Войдите, чтобы открыть профиль",
+  "guest_profile_body": "Личные данные, адреса и способы оплаты доступны после входа."
 }

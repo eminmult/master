@@ -74,18 +74,17 @@ class CategoryController extends Controller
      */
     private function projectCategory(Category $c, string $locale, bool $withSubs): array
     {
-        // Per-locale slugs are exposed so SSR pages can build canonical
-        // hreflang alternates without round-tripping to the backend.
-        $slugTranslations = ['az' => $c->slug] + ($c->slug_translations ?: []);
-        $nameTranslations = ['az' => $c->name] + ($c->name_translations ?: []);
+        // Hybrid strategy: ONE canonical slug across every locale (the AZ
+        // value). Page content (name, description) is localized, but URL
+        // stays /category/santexnik regardless of language. Google ranks by
+        // content + meta, not slug — Bolt/Glovo/Wolt/Yandex.Услуги all
+        // localize content, not URLs. Eliminates the bulk of per-locale
+        // slug redirect / cache / fallback complexity.
         return [
             'id' => $c->id,
             'name' => $c->nameFor($locale),
             'name_az' => $c->name,
-            'name_translations' => $nameTranslations,
-            'slug' => $c->slugFor($locale),
-            'slug_az' => $c->slug,
-            'slug_translations' => $slugTranslations,
+            'slug' => $c->slug, // canonical AZ
             'icon_url' => $c->icon_url,
             'description' => $c->descriptionFor($locale),
             'sort_order' => $c->sort_order,

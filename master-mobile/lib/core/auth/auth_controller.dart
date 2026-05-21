@@ -1,13 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:master_mobile/core/auth/auth_storage.dart';
 import 'package:master_mobile/core/api/api_client.dart';
+import 'package:master_mobile/core/auth/auth_storage.dart';
 import 'package:master_mobile/features/auth/data/auth_repository.dart';
 import 'package:master_mobile/features/auth/data/models/user.dart';
 
-/// Single source of truth for "who am I, am I logged in".
-/// UI listens via ref.watch(authStateProvider) — when state goes to
-/// AuthState.unauthenticated, the router redirects to /login.
+/// Auth state machine: who is signed in (or still loading).
+///
+/// Pages observe via `ref.watch(authStateProvider)`. The router listens to
+/// the same provider and redirects unauthenticated users away from
+/// protected pages.
 sealed class AuthState {
   const AuthState();
 }
@@ -25,39 +27,40 @@ class AuthUnauthenticated extends AuthState {
   const AuthUnauthenticated();
 }
 
-final authStateProvider = StateNotifierProvider<AuthController, AuthState>((ref) {
-  return AuthController(
-    ref.watch(authRepositoryProvider),
-    ref.watch(authStorageProvider),
-  );
-});
+/// Riverpod 2.5+ Notifier. Migrated off StateNotifier because Riverpod 3
+/// will drop it; Notifier also has tighter ergonomics (build() instead of
+/// constructor, no separate Listenable lifecycle, easier to test). Callers
+/// using `ref.watch(authStateProvider)` / `ref.read(authStateProvider.notifier)`
+/// continue to work unchanged.
+final authStateProvider =
+    NotifierProvider<AuthController, AuthState>(AuthController.new);
 
-class AuthController extends StateNotifier<AuthState> {
-  AuthController(this._repo, this._storage) : super(const AuthLoading()) {
-    bootstrap();
+class AuthController extends Notifier<AuthState> {
+  late final AuthRepository _repo;
+  late final AuthStorage _storage;
+
+  @override
+  AuthState build() {
+    _repo = ref.watch(authRepositoryProvider);
+    _storage = ref.watch(authStorageProvider);
+    // Kick off /auth/me asynchronously — state transitions to authenticated
+    // or unauthenticated once we have an answer. Initial state is Loading.
+    Future.microtask(_bootstrap);
+    return const AuthLoading();
   }
 
-  final AuthRepository _repo;
-  final AuthStorage _storage;
+  /// Wrap a storage call with a 3-second timeout. flutter_secure_storage on
+  /// web hangs indefinitely if the browser API is misbehaving (incognito,
+  /// restricted localStorage, third-party cookies blocked); we'd rather
+  /// fail-open to "unauthenticated" than leave the user on a splash screen.
+  /// Using `Future<T?>` avoids the `null as T` cast that throws at runtime
+  /// for non-nullable T.
+  static Future<T?> _bounded<T extends Object>(Future<T?> f) =>
+      f.timeout(const Duration(seconds: 3), onTimeout: () => null);
 
-  /// Called on app start. If we have a token, fetch /auth/me to validate it.
-  /// Failure → unauthenticated. Success → authenticated.
-  ///
-  /// The whole body is wrapped in try/catch so that ANY failure (secure
-  /// storage broken on web, /auth/me unreachable, deserialisation error)
-  /// transitions us to AuthUnauthenticated instead of leaving the splash
-  /// hanging forever in AuthLoading.
-  Future<void> bootstrap() async {
-    // 3-second timeout on every storage call. flutter_secure_storage on web
-    // can hang indefinitely if the underlying browser API is misbehaving
-    // (incognito + restricted localStorage, third-party cookies blocked, etc).
-    // We'd rather fail-open to "unauthenticated" than leave the user staring
-    // at a splash screen forever.
-    Future<T?> _bounded<T>(Future<T> f) =>
-        f.timeout(const Duration(seconds: 3), onTimeout: () => null as T);
-
+  Future<void> _bootstrap() async {
     try {
-      final token = await _bounded(_storage.readToken());
+      final token = await _bounded<String>(_storage.readToken());
       if (token == null) {
         state = const AuthUnauthenticated();
         return;
@@ -66,7 +69,9 @@ class AuthController extends StateNotifier<AuthState> {
         final user = await _repo.me().timeout(const Duration(seconds: 8));
         state = AuthAuthenticated(user);
       } catch (_) {
-        try { await _bounded(_storage.clear()); } catch (_) {}
+        try {
+          await _storage.clear().timeout(const Duration(seconds: 3));
+        } catch (_) {/* storage broken — moving on */}
         state = const AuthUnauthenticated();
       }
     } catch (e, st) {
