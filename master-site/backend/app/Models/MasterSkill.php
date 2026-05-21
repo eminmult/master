@@ -7,11 +7,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MasterSkill extends Model
 {
-    protected $fillable = ['master_profile_id', 'category_id', 'name', 'is_active', 'sort_order'];
+    use \App\Models\Concerns\HasAutoTranslation;
+
+    protected array $translatable = ['name'];
+
+    protected $fillable = ['master_profile_id', 'category_id', 'name', 'is_active', 'sort_order',
+        'name_translations', 'content_locale'];
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return [
+            'is_active' => 'boolean',
+            'name_translations' => 'array',
+        ];
     }
 
     public function masterProfile(): BelongsTo

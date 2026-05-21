@@ -174,6 +174,13 @@ useHead(() => {
     ? {
         '@context': 'https://schema.org',
         '@type': 'FAQPage',
+        // speakable hint lets Google Assistant / voice search read these
+        // questions aloud verbatim. CSS-selectors point at the summary tags
+        // inside the rendered <details> blocks.
+        speakable: {
+          '@type': 'SpeakableSpecification',
+          cssSelector: ['.hm-cat-faq summary', '.hm-cat-faq details > p'],
+        },
         mainEntity: faqs.map((qa) => ({
           '@type': 'Question',
           name: qa.q,

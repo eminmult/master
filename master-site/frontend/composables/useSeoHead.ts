@@ -32,6 +32,11 @@ export interface SeoHeadInput {
 export function useSeoHead(input: SeoHeadInput | (() => SeoHeadInput)) {
   const route = useRoute()
   const i18n = useI18n()
+  // Shared state so the header language switcher can pick the right
+  // per-locale URL when the user changes language (otherwise it would just
+  // swap the /az/ prefix and keep the original slug, e.g. /en/category/santexnik
+  // instead of /en/category/plumber).
+  const localeLinks = useState<Record<string, string> | null>('hm-locale-links', () => null)
 
   const resolve = (): SeoHeadInput => (typeof input === 'function' ? input() : input)
 
@@ -47,6 +52,12 @@ export function useSeoHead(input: SeoHeadInput | (() => SeoHeadInput)) {
       l,
       href: localizedHref(inp.hreflangPaths?.[l] || canonical, l),
     }))
+
+    // Publish the per-locale path map so the header can route the language
+    // switcher to the right translated slug.
+    const map: Record<string, string> = {}
+    for (const l of LOCALES) map[l] = inp.hreflangPaths?.[l] || canonical
+    localeLinks.value = map
 
     return { inp, localeNow, canonical, hreflangs }
   })

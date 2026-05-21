@@ -12,7 +12,7 @@ class MasterProfile extends Model
 {
     use HasAutoTranslation;
 
-    protected array $translatable = ['description'];
+    protected array $translatable = ['description', 'city', 'district'];
 
     protected $fillable = [
         'user_id',
@@ -34,6 +34,8 @@ class MasterProfile extends Model
         'completed_orders_count',
         'canceled_orders_count',
         'description_translations',
+        'city_translations',
+        'district_translations',
         'content_locale',
     ];
 
@@ -50,6 +52,8 @@ class MasterProfile extends Model
             'location_updated_at' => 'datetime',
             'verified_at' => 'datetime',
             'description_translations' => 'array',
+            'city_translations' => 'array',
+            'district_translations' => 'array',
         ];
     }
 

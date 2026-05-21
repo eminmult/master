@@ -60,8 +60,8 @@ class UserProfileController extends Controller
             'id' => $user->id,
             'slug' => implode('-', $slugParts),
             'slug_translations' => $slugTranslations,
-            'first_name' => $user->first_name,
-            'last_name' => $user->last_name,
+            'first_name' => $user->localized('first_name'),
+            'last_name' => $user->localized('last_name'),
             'full_name' => $user->full_name,
             'avatar_url' => $user->avatar_url,
             'role' => $user->role,
@@ -80,10 +80,10 @@ class UserProfileController extends Controller
             $cats = $profile->masterCategories->map(fn($mc) => $mc->category)->filter()->unique('id')->values();
 
             $data['master_profile'] = [
-                'description' => $profile->description,
+                'description' => $profile->localized('description'),
                 'experience_years' => $profile->experience_years,
-                'city' => $profile->city,
-                'district' => $profile->district,
+                'city' => $profile->localized('city'),
+                'district' => $profile->localized('district'),
                 'is_online' => $profile->status === 'online',
                 'is_accepting' => $profile->is_accepting_orders,
                 'is_verified' => $profile->is_verified,
@@ -99,7 +99,7 @@ class UserProfileController extends Controller
                 ])->values(),
                 'skills' => $profile->skills->groupBy(fn($s) => $s->category?->nameFor($locale) ?? 'Other')->map(fn($group) => $group->map(fn($s) => [
                     'id' => $s->id,
-                    'name' => $s->name,
+                    'name' => $s->localized('name'),
                 ])->values())->toArray(),
                 'portfolio' => $profile->portfolioItems,
             ];

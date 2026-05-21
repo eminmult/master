@@ -76,6 +76,32 @@ Route::get('/categories/{category}', [CategoryController::class, 'show']);
 // Public list of cities derived from active master profiles.
 Route::get('/cities', [\App\Http\Controllers\Api\CityController::class, 'index']);
 
+// Blog — public list + single post by slug.
+Route::get('/posts', [\App\Http\Controllers\Api\PostController::class, 'index']);
+Route::get('/posts/{slug}', [\App\Http\Controllers\Api\PostController::class, 'show']);
+
+// City × Category SEO content (intro, pricing, FAQs). Falls back to the
+// generic category content when no city-specific row exists yet.
+Route::get('/cities/{city}/categories/{category}/content', function (string $city, $category) {
+    $cat = ctype_digit((string) $category)
+        ? \App\Models\Category::find((int) $category)
+        : \App\Models\Category::where('slug', $category)
+            ->orWhereRaw("EXISTS (SELECT 1 FROM jsonb_each_text(slug_translations) WHERE value = ?)", [$category])
+            ->first();
+    if (!$cat) abort(404);
+    $locale = app()->getLocale();
+    $row = \App\Models\CityCategoryContent::where('city_slug', $city)
+        ->where('category_id', $cat->id)
+        ->where('locale', $locale)
+        ->value('body');
+    if (!$row) {
+        // Fallback to generic category content so the page isn't empty.
+        $row = \App\Models\CategoryContent::where('category_id', $cat->id)
+            ->where('locale', $locale)->value('body');
+    }
+    return response()->json(['content' => $row]);
+});
+
 // Public list of supported locales — both clients fetch on bootstrap.
 Route::get('/i18n/locales', [\App\Http\Controllers\Api\LocaleController::class, 'index']);
 
@@ -86,6 +112,21 @@ Route::get('/masters/{id}/reviews', [MasterListController::class, 'reviews']);
 
 // AI-assisted smart search — text + optional photo → category classification
 Route::middleware('throttle:30,1')->post('/smart-search', [\App\Http\Controllers\Api\SmartSearchController::class, 'classify']);
+
+// Core Web Vitals beacon — the frontend posts LCP/INP/CLS/TTFB samples here
+// from real users. We log to a dedicated channel so an offline aggregator can
+// build percentile dashboards without straining the request hot path.
+Route::middleware('throttle:120,1')->post('/cwv', function (\Illuminate\Http\Request $r) {
+    $data = $r->validate([
+        'name' => 'required|string|in:LCP,INP,CLS,TTFB,FCP',
+        'value' => 'required|numeric',
+        'id' => 'nullable|string|max:64',
+        'path' => 'nullable|string|max:512',
+        'rating' => 'nullable|in:good,needs-improvement,poor',
+    ]);
+    \Illuminate\Support\Facades\Log::channel('cwv')->info('cwv', $data);
+    return response()->noContent();
+});
 
 // Public homepage stats (masters count, completed orders, avg rating) — cached 5 min
 Route::get('/stats/public', function () {
@@ -352,6 +393,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin
     Route::middleware('role:admin')->prefix('admin')->group(function () {
+        // Blog post create/update/delete (single endpoint upserts on slug+locale).
+        Route::post('/posts', [\App\Http\Controllers\Api\PostController::class, 'upsert']);
+        Route::delete('/posts/{slug}/{locale}', [\App\Http\Controllers\Api\PostController::class, 'destroy']);
+
         // Withdrawals — admin settles master payouts manually until a real PSP is wired.
         Route::get('/withdrawals',                            [\App\Http\Controllers\Api\WithdrawalController::class, 'adminIndex']);
         Route::post('/withdrawals/{withdrawal}/approve',      [\App\Http\Controllers\Api\WithdrawalController::class, 'adminApprove']);

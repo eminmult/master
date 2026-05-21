@@ -10,6 +10,25 @@
           </div>
         </div>
 
+        <!-- Same content shape as /category, rendered when city-specific or
+             generic category content is available. -->
+        <article v-if="content" class="hm-cat-content">
+          <section v-if="content.intro" class="hm-cat-block">
+            <p v-for="(p, i) in (content.intro.split(/\n+/))" :key="i">{{ p }}</p>
+          </section>
+          <section v-if="content.pricing" class="hm-cat-block">
+            <h2>{{ $t('catpage.pricing') }}</h2>
+            <p>{{ content.pricing }}</p>
+          </section>
+          <section v-if="content.faqs?.length" class="hm-cat-block hm-cat-faq">
+            <h2>{{ $t('catpage.faq') }}</h2>
+            <details v-for="(qa, i) in content.faqs" :key="i">
+              <summary>{{ qa.q }}</summary>
+              <p>{{ qa.a }}</p>
+            </details>
+          </section>
+        </article>
+
         <div v-if="loading && !masters.length" class="hm-loading">{{ $t('common.loading') }}</div>
         <div v-else-if="masters.length === 0" class="hm-empty">{{ $t('masters.no_results') }}</div>
 
@@ -83,15 +102,23 @@ const { data: payload, pending: loading } = await useAsyncData(
   () => `citycat-${citySlug.value}-${categorySlug.value}`,
   async () => {
     try {
-      const [catRes, cityRes, mastersRes] = await Promise.all([
+      const [catRes, cityRes, mastersRes, ccRes] = await Promise.all([
         apiFetch<{ category: any }>(`/categories/${categorySlug.value}`),
         apiFetch<{ cities: { name: string; slug: string }[] }>('/cities'),
         apiFetch<{ masters: any[] }>(
           `/masters?category_slug=${encodeURIComponent(categorySlug.value)}&city_slug=${encodeURIComponent(citySlug.value)}`,
         ),
+        apiFetch<{ content: any }>(
+          `/cities/${encodeURIComponent(citySlug.value)}/categories/${encodeURIComponent(categorySlug.value)}/content`,
+        ).catch(() => ({ content: null })),
       ])
       const cityName = (cityRes.cities || []).find((c) => c.slug === citySlug.value)?.name || citySlug.value
-      return { category: catRes.category, cityName, masters: mastersRes.masters || [] }
+      return {
+        category: catRes.category,
+        cityName,
+        masters: mastersRes.masters || [],
+        content: ccRes.content || null,
+      }
     } catch { return null }
   },
   { default: () => null, watch: [citySlug, categorySlug] },
@@ -99,6 +126,7 @@ const { data: payload, pending: loading } = await useAsyncData(
 
 const category = computed(() => payload.value?.category || null)
 const masters = computed(() => payload.value?.masters || [])
+const content = computed(() => payload.value?.content || null)
 const heading = computed(() => {
   const cn = category.value?.name || categorySlug.value
   const city = payload.value?.cityName || citySlug.value
@@ -184,4 +212,26 @@ onBeforeUnmount(() => breadcrumbs.set(null))
 
 <style scoped>
 .hm-page-desc { margin-top: 8px; color: var(--hm-text-2); max-width: 800px; }
+.hm-cat-content {
+  max-width: 820px;
+  margin: 40px auto;
+  display: grid;
+  gap: 32px;
+  line-height: 1.65;
+  color: var(--hm-text);
+}
+.hm-cat-block h2 { font-size: 22px; font-weight: 700; margin: 0 0 14px; letter-spacing: -0.01em; }
+.hm-cat-block p { margin: 0 0 12px; }
+.hm-cat-faq details {
+  border: 1px solid var(--hm-border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 10px;
+  background: var(--hm-bg-card);
+}
+.hm-cat-faq summary { cursor: pointer; font-weight: 600; list-style: none; }
+.hm-cat-faq summary::-webkit-details-marker { display: none; }
+.hm-cat-faq summary::after { content: '+'; float: inline-end; color: var(--hm-text-3); }
+.hm-cat-faq details[open] summary::after { content: '−'; }
+.hm-cat-faq details p { margin-top: 10px; color: var(--hm-text-2); }
 </style>

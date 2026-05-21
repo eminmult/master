@@ -65,6 +65,16 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Dedicated channel for Core Web Vitals samples beaconed from real
+        // users. Logging here (instead of laravel.log) lets an offline tool
+        // tail this file to build percentile dashboards.
+        'cwv' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/cwv.log'),
+            'level' => 'info',
+            'days' => 30,
+        ],
+
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),

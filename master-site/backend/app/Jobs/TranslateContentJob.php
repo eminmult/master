@@ -67,8 +67,23 @@ class TranslateContentJob implements ShouldQueue, ShouldBeUnique
             $src = $source ?: $svc->detect($value);
             if (!$source) $source = $src;
 
+            // Cleanup pass for long-form text only. Short fields (names,
+            // city names) are proper nouns or single-token values where
+            // "fixing typos" would erase valid spellings; we go straight to
+            // translation/transliteration for those.
+            if (mb_strlen($value) >= 50) {
+                $cleaned = $this->cleanupText($value, $src);
+                if ($cleaned && $cleaned !== $value) {
+                    $updates[$field] = $cleaned;
+                    $value = $cleaned;
+                }
+            }
+
             $translations = $svc->translateToAll($value, $src);
-            if (!empty($translations)) {
+            if (!empty($translations) || $value !== '') {
+                // Seed the source locale with the cleaned text so reading
+                // translations[$current_locale] always works.
+                $translations[$src] = $value;
                 $updates[$field . '_translations'] = $translations;
             }
         }
@@ -78,8 +93,46 @@ class TranslateContentJob implements ShouldQueue, ShouldBeUnique
         }
 
         if (!empty($updates)) {
-            // updateQuietly — avoid re-triggering saved() event and infinite loop
+            // saveQuietly — avoid re-triggering saved() event and infinite loop
             $model->forceFill($updates)->saveQuietly();
+        }
+    }
+
+    /**
+     * Light cleanup of user-supplied text in its original language:
+     * typos, grammar, capitalisation, punctuation. Returns null on any LLM
+     * failure (caller falls back to the unchanged source).
+     */
+    private function cleanupText(string $text, string $locale): ?string
+    {
+        $key = config('services.gemini.key');
+        if (!$key) return null;
+        $langName = TranslationService::LOCALE_NAMES[$locale] ?? $locale;
+        $prompt = "You are an editor for itez.app, a home-services marketplace. "
+            . "A tradesperson wrote the text below in {$langName}. Fix typos, grammar, "
+            . "capitalisation and punctuation. Keep the original wording and tone — do "
+            . "not add new content, do not restructure. Output ONLY the cleaned text in "
+            . "{$langName} (no quotes, no commentary).\n\nTEXT:\n<<<\n{$text}\n>>>";
+        $model = config('services.gemini.model', 'gemini-2.5-flash');
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$key}";
+        try {
+            $resp = \Illuminate\Support\Facades\Http::timeout(40)
+                ->retry(2, 1500, throw: false)
+                ->asJson()
+                ->post($url, [
+                    'contents' => [['parts' => [['text' => $prompt]]]],
+                    'generationConfig' => ['temperature' => 0.1, 'maxOutputTokens' => 4096],
+                ]);
+            if (!$resp->ok()) return null;
+            $clean = $resp->json('candidates.0.content.parts.0.text');
+            $clean = is_string($clean) ? trim($clean) : null;
+            // Guard: drop suspiciously-grown output (>30% larger) — likely
+            // the model added commentary.
+            if (!$clean || mb_strlen($clean) > mb_strlen($text) * 1.3) return null;
+            return $clean;
+        } catch (\Throwable $e) {
+            Log::warning('translate_cleanup_failed', ['err' => $e->getMessage()]);
+            return null;
         }
     }
 

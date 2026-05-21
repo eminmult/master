@@ -11,7 +11,14 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, \App\Models\Concerns\HasAutoTranslation;
+
+    /**
+     * Auto-translate first/last name across all locales. Names are proper
+     * nouns — the TranslationService prompt transliterates them into the
+     * target script ("Rəşad" → "Rashad" / "Рашад" / "رشاد").
+     */
+    protected array $translatable = ['first_name', 'last_name'];
 
     protected $fillable = [
         'first_name',
@@ -26,7 +33,11 @@ class User extends Authenticatable
         'subscription_active',
         'subscription_expires_at',
         'registration_paid_at',
+        'first_name_translations',
+        'last_name_translations',
+        'content_locale',
     ];
+
 
     protected $hidden = [
         'password',
@@ -46,6 +57,8 @@ class User extends Authenticatable
             'registration_paid_at' => 'datetime',
             'rating_avg' => 'decimal:2',
             'password' => 'hashed',
+            'first_name_translations' => 'array',
+            'last_name_translations' => 'array',
         ];
     }
 
@@ -74,7 +87,7 @@ class User extends Authenticatable
 
     public function getFullNameAttribute(): string
     {
-        return trim("{$this->first_name} {$this->last_name}");
+        return trim("{$this->localized('first_name')} {$this->localized('last_name')}");
     }
 
     /**

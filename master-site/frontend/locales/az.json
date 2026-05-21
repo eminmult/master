@@ -668,7 +668,7 @@
     "available": "Mövcuddur",
     "skills_title": "Bacarıqlarım",
     "load_more": "Daha çox yüklə",
-    "call_this_master": "Bu ustanı cagir",
+    "call_this_master": "Bu ustanı çağır",
     "currently_offline": "Usta hazirda oflayndir",
     "reviews_short": "rəy",
     "years": "il",
@@ -677,7 +677,8 @@
     "experience": "Təcrübə",
     "radius": "Radius",
     "km": "km",
-    "sort_distance": "Məsafəyə görə"
+    "sort_distance": "Məsafəyə görə",
+    "not_accepting_now": "Hazırda sifariş qəbul etmir"
   },
   "chat": {
     "title": "Mesajlar",
@@ -1071,5 +1072,12 @@
     "when_needed": "Nə zaman lazımdır",
     "how_to_choose": "Necə seçmək",
     "faq": "Tez-tez verilən suallar"
+  },
+  "blog": {
+    "title": "Bloq",
+    "subtitle": "Ev təmiri və xidmətlər haqqında bələdçilər",
+    "empty": "Hələ məqalə yoxdur",
+    "seo_title": "Bloq — itez.app ev xidmətləri bələdçiləri",
+    "seo_desc": "Ev təmiri, santexnik, elektrik, təmizlik və digər xidmətlər haqqında praktiki məsləhətlər və qiymət bələdçiləri."
   }
 }

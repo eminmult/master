@@ -14,7 +14,9 @@ class MasterController extends Controller
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
             'email' => 'nullable|email|unique:users,email,' . $request->user()->id,
-            'description' => 'nullable|string|max:2000',
+            // 300-char minimum: short descriptions hurt master SEO + are a
+            // poor signal to clients. Frontend hint matches this floor.
+            'description' => 'nullable|string|min:300|max:2000',
             'city' => 'nullable|string|max:100',
             'district' => 'nullable|string|max:100',
             'experience_years' => 'nullable|integer|min:0|max:50',
@@ -30,12 +32,23 @@ class MasterController extends Controller
 
         $profile = $request->user()->masterProfile;
         if ($profile) {
-            $profile->update([
+            // When the description changes we want HasAutoTranslation to
+            // re-run the cleanup + translate pass against the user's current
+            // locale (they may have submitted the form in any of the 5
+            // supported languages). Reset content_locale + translations so
+            // the trait picks the new source.
+            $descChanged = isset($data['description']) && $data['description'] !== $profile->description;
+            $payload = [
                 'description' => $data['description'] ?? $profile->description,
                 'city' => $data['city'] ?? $profile->city,
                 'district' => $data['district'] ?? $profile->district,
                 'experience_years' => $data['experience_years'] ?? $profile->experience_years,
-            ]);
+            ];
+            if ($descChanged) {
+                $payload['content_locale'] = app()->getLocale();
+                $payload['description_translations'] = [];
+            }
+            $profile->update($payload);
 
             // Update categories
             if (isset($data['category_ids'])) {

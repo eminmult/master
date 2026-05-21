@@ -75,7 +75,7 @@ class _RegisterClientPageState extends ConsumerState<RegisterClientPage> {
               children: [
                 Row(children: [
                   HmIconButton(icon: Icons.arrow_back_ios_new_rounded, small: true, flat: true,
-                      onPressed: () => context.canPop() ? context.pop() : context.go('/register')),
+                      onPressed: () => context.canPop() ? context.pop() : context.pushReplacement('/register')),
                 ]),
                 const SizedBox(height: 12),
                 Text(loc.auth_register_client_title,
@@ -150,7 +150,7 @@ class _RegisterClientPageState extends ConsumerState<RegisterClientPage> {
                 ),
                 const SizedBox(height: 12),
                 TextButton(
-                  onPressed: () => context.go('/login'),
+                  onPressed: () => context.pushReplacement('/login'),
                   child: Text(loc.auth_already_have_account_signin,
                       style: const TextStyle(color: HmColors.accent)),
                 ),

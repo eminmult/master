@@ -18,10 +18,31 @@ use App\Jobs\TranslateContentJob;
  */
 trait HasAutoTranslation
 {
+    /**
+     * Read the protected $translatable property from the host model.
+     *
+     * `$model->translatable` returns null here because Eloquent's __get
+     * treats it as a missing column attribute, so the silent fallback to
+     * [] meant the saved() hook below never dispatched a translation job.
+     * Reading via reflection is the simplest fix that keeps the trait API
+     * (`protected array $translatable`) backwards-compatible.
+     */
+    protected static function translatableFields(\Illuminate\Database\Eloquent\Model $model): array
+    {
+        try {
+            $ref = new \ReflectionProperty($model, 'translatable');
+            $ref->setAccessible(true);
+            $v = $ref->getValue($model);
+            return is_array($v) ? $v : [];
+        } catch (\ReflectionException) {
+            return [];
+        }
+    }
+
     public static function bootHasAutoTranslation(): void
     {
         static::saved(function ($model) {
-            $fields = $model->translatable ?? [];
+            $fields = self::translatableFields($model);
             if (empty($fields)) return;
 
             // Which translatable fields actually changed in this save?
@@ -81,7 +102,7 @@ trait HasAutoTranslation
         $array = $this->attributesToArray();
         foreach ($this->relationsToArray() as $k => $v) $array[$k] = $v;
 
-        foreach ($this->translatable ?? [] as $field) {
+        foreach (self::translatableFields($this) as $field) {
             if (array_key_exists($field, $array) && $array[$field] !== null && $array[$field] !== '') {
                 $array[$field] = $this->localized($field);
             }

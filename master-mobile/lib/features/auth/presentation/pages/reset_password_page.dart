@@ -77,7 +77,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
             children: [
               Row(children: [
                 HmIconButton(icon: Icons.arrow_back_ios_new_rounded, small: true, flat: true,
-                    onPressed: () => context.go('/login')),
+                    onPressed: () => context.canPop() ? context.pop() : context.pushReplacement('/login')),
               ]),
               const SizedBox(height: 24),
               Text(loc.auth_reset_title,
@@ -125,7 +125,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
               ],
               const SizedBox(height: 12),
               TextButton(
-                onPressed: () => context.go('/login'),
+                onPressed: () => context.canPop() ? context.pop() : context.pushReplacement('/login'),
                 child: Text(loc.auth_back_to_login, style: const TextStyle(color: HmColors.accent)),
               ),
             ],

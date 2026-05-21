@@ -28,7 +28,7 @@ class RegisterRolePickerPage extends StatelessWidget {
                 desc: loc.auth_role_client_desc,
                 icon: Icons.person_search_rounded,
                 primary: true,
-                onTap: () => context.go('/register/client'),
+                onTap: () => context.push('/register/client'),
               ),
               const SizedBox(height: 12),
               _RoleCard(
@@ -36,11 +36,11 @@ class RegisterRolePickerPage extends StatelessWidget {
                 desc: loc.auth_role_master_desc,
                 icon: Icons.handyman_rounded,
                 primary: false,
-                onTap: () => context.go('/register/master'),
+                onTap: () => context.push('/register/master'),
               ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: () => context.go('/login'),
+                onPressed: () => context.canPop() ? context.pop() : context.pushReplacement('/login'),
                 child: Text(loc.auth_back_to_login),
               ),
             ],

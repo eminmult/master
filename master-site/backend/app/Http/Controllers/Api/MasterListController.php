@@ -22,6 +22,25 @@ class MasterListController extends Controller
         abort(404);
     }
 
+    /**
+     * Rewrite Unsplash CDN URLs to ask for WebP at a sane width. Unsplash
+     * supports query-string transforms (`fm=webp`, `w=400`, `q=80`, `auto=format`)
+     * and serves AVIF where the client's Accept header allows it. Saves
+     * 30-50% bandwidth vs the default JPEG without any server-side cost.
+     */
+    private function optimizeImageUrl(?string $url, int $width = 400): ?string
+    {
+        if (!$url) return $url;
+        if (!str_contains($url, 'images.unsplash.com')) return $url;
+        // Drop any existing w= and add ours; force WebP via fm=.
+        $url = preg_replace('/([?&])w=\d+/', '$1w=' . $width, $url) ?? $url;
+        if (!str_contains($url, 'fm=')) {
+            $sep = str_contains($url, '?') ? '&' : '?';
+            $url .= $sep . 'fm=webp&q=80&auto=format';
+        }
+        return $url;
+    }
+
     private function haversineKm(float $lat1, float $lng1, float $lat2, float $lng2): float
     {
         $R = 6371.0;
@@ -49,9 +68,18 @@ class MasterListController extends Controller
         if ($categoryId = $request->query('category_id')) {
             $query->whereHas('masterCategories', fn($q) => $q->where('category_id', $categoryId));
         } elseif ($categorySlug = $request->query('category_slug')) {
+            // Match the canonical AZ slug OR any per-locale slug stored in
+            // slug_translations. Without the JSONB-scan branch a URL like
+            // /ru/category/santehnik (Russian slug) wouldn't find category 1
+            // (canonical slug "santexnik") and the listing came back empty.
             $query->whereHas(
                 'masterCategories.category',
-                fn ($q) => $q->where('slug', $categorySlug)
+                fn ($q) => $q
+                    ->where('slug', $categorySlug)
+                    ->orWhereRaw(
+                        "EXISTS (SELECT 1 FROM jsonb_each_text(slug_translations) WHERE value = ?)",
+                        [$categorySlug],
+                    ),
             );
         }
 
@@ -139,16 +167,16 @@ class MasterListController extends Controller
             return [
                 'id' => $user->id,
                 'slug' => implode('-', $slugParts),
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name,
+                'first_name' => $user->localized('first_name'),
+                'last_name' => $user->localized('last_name'),
                 'full_name' => $user->full_name,
-                'avatar_url' => $user->avatar_url,
+                'avatar_url' => $this->optimizeImageUrl($user->avatar_url, 400),
                 'rating_avg' => $user->rating_avg,
                 'rating_count' => $user->rating_count,
-                'description' => $profile->description,
+                'description' => $profile->localized('description'),
                 'experience_years' => $profile->experience_years,
-                'city' => $profile->city,
-                'district' => $profile->district,
+                'city' => $profile->localized('city'),
+                'district' => $profile->localized('district'),
                 'is_online' => $profile->status === 'online',
                 'is_accepting' => $profile->is_accepting_orders,
                 'is_verified' => $profile->is_verified,
@@ -220,16 +248,16 @@ class MasterListController extends Controller
                 'id' => $user->id,
                 'slug' => implode('-', $slugParts),
                 'slug_translations' => $slugTranslations,
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name,
+                'first_name' => $user->localized('first_name'),
+                'last_name' => $user->localized('last_name'),
                 'full_name' => $user->full_name,
-                'avatar_url' => $user->avatar_url,
+                'avatar_url' => $this->optimizeImageUrl($user->avatar_url, 400),
                 'rating_avg' => $user->rating_avg,
                 'rating_count' => $user->rating_count,
-                'description' => $profile->description,
+                'description' => $profile->localized('description'),
                 'experience_years' => $profile->experience_years,
-                'city' => $profile->city,
-                'district' => $profile->district,
+                'city' => $profile->localized('city'),
+                'district' => $profile->localized('district'),
                 'is_online' => $profile->status === 'online',
                 'is_accepting' => $profile->is_accepting_orders,
                 'is_verified' => $profile->is_verified,
@@ -240,7 +268,7 @@ class MasterListController extends Controller
                 'categories' => $catsOut,
                 'skills' => $profile->skills->groupBy(fn($s) => $s->category?->nameFor($locale) ?? 'Digər')->map(fn($group) => $group->map(fn($s) => [
                     'id' => $s->id,
-                    'name' => $s->name,
+                    'name' => $s->localized('name'),
                     'is_active' => $s->is_active,
                 ])->values())->toArray(),
                 'portfolio' => $profile->portfolioItems,

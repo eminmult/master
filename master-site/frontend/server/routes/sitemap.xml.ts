@@ -11,5 +11,6 @@ export default defineEventHandler((event) => {
     { loc: `${SITE_ORIGIN}/sitemap-categories.xml`, lastmod: now },
     { loc: `${SITE_ORIGIN}/sitemap-masters.xml`, lastmod: now },
     { loc: `${SITE_ORIGIN}/sitemap-citycat.xml`, lastmod: now },
+    { loc: `${SITE_ORIGIN}/sitemap-blog.xml`, lastmod: now },
   ])
 })

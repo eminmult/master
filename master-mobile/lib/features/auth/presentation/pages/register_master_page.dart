@@ -118,7 +118,7 @@ class _RegisterMasterPageState extends ConsumerState<RegisterMasterPage> {
                       } else if (context.canPop()) {
                         context.pop();
                       } else {
-                        context.go('/register');
+                        context.pushReplacement('/register');
                       }
                     },
                   ),

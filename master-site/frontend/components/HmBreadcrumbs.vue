@@ -13,10 +13,11 @@
 <script setup lang="ts">
 import type { BreadcrumbItem } from '~/composables/useBreadcrumbs'
 
-const { t: $t } = useI18n()
+const { t: $t, locale } = useI18n()
 const localePath = useLocalePath()
 const route = useRoute()
 const { trail } = useBreadcrumbs()
+const { apiFetch } = useApi()
 
 // Static label map for routes without a setBreadcrumbs() call. Keys are the
 // route name without locale prefix (e.g., "masters", "category-slug").
@@ -46,18 +47,89 @@ function tr(key: string): string {
   return v === key ? '' : v
 }
 
+// Look up the entity name in the current locale for known dynamic patterns
+// so the SSR-rendered breadcrumb already has the translated label
+// (page-level setBreadcrumbs runs AFTER layout render and only kicks in on
+// the client). Uses useAsyncData so SSR awaits the resolution and cache keys
+// the result. Locale + path are both keyed so a language switch refetches.
+const strippedPath = computed(
+  () => (route.path.replace(/^\/(az|en|ru|tr|ar)(?=\/|$)/, '') || '/'),
+)
+const segments = computed(() => strippedPath.value.split('/').filter(Boolean))
+
+const { data: dynamicLabel } = await useAsyncData(
+  () => `crumb-${locale.value}-${strippedPath.value}`,
+  async () => {
+    const segs = segments.value
+    try {
+      // /master/{slug}
+      if (segs[0] === 'master' && segs[1] && segs.length === 2) {
+        const r: any = await apiFetch(`/users/${segs[1]}/profile`)
+        return { dynamic: r?.profile?.full_name }
+      }
+      // /category/{slug}
+      if (segs[0] === 'category' && segs[1] && segs.length === 2) {
+        const r: any = await apiFetch(`/categories/${segs[1]}`)
+        return { dynamic: r?.category?.name }
+      }
+      // /blog/{slug}
+      if (segs[0] === 'blog' && segs[1] && segs.length === 2) {
+        const r: any = await apiFetch(`/posts/${segs[1]}`)
+        return { dynamic: r?.post?.title }
+      }
+      // /{city}/{category} — city slug + category slug
+      if (segs.length === 2 && !FALLBACK_LABELS[segs[0]] && !['master', 'category', 'blog'].includes(segs[0])) {
+        const [cats, cities] = await Promise.all([
+          apiFetch<{ categories: { slug: string; name: string }[] }>('/categories?only_with_masters=1').catch(() => ({ categories: [] })),
+          apiFetch<{ cities: { slug: string; name: string }[] }>('/cities').catch(() => ({ cities: [] })),
+        ])
+        const cat = (cats as any).categories?.find((c: any) => c.slug === segs[1])
+        const city = (cities as any).cities?.find((c: any) => c.slug === segs[0])
+        if (cat && city) {
+          return { city: city.name, citySlug: city.slug, categorySlug: cat.slug, categoryName: cat.name }
+        }
+      }
+    } catch { /* fall through to slug */ }
+    return null
+  },
+  { default: () => null, watch: [locale, strippedPath] },
+)
+
 function autoTrail(): { label: string; to?: string }[] {
-  const path = route.path.replace(/^\/(az|en|ru|tr|ar)(?=\/|$)/, '') || '/'
-  if (path === '/' || path === '') return []
-  const segments = path.split('/').filter(Boolean)
+  const segs = segments.value
+  if (!segs.length) return []
+  const dyn: any = dynamicLabel.value || null
   const out: { label: string; to?: string }[] = []
   let acc = ''
-  for (let i = 0; i < segments.length; i++) {
-    acc += '/' + segments[i]
-    const key = segments[i]
-    const labelKey = FALLBACK_LABELS[key]
-    const label = labelKey ? tr(labelKey) || key : key
-    out.push({ label, to: i < segments.length - 1 ? localePath(acc) : undefined })
+  // Specialised shapes — emit nicer crumbs than the generic segment-by-segment
+  // builder below.
+  if (segs[0] === 'master' && segs[1]) {
+    out.push({ label: tr('nav.masters') || 'Masters', to: localePath('/masters') })
+    out.push({ label: dyn?.dynamic || segs[1] })
+    return out
+  }
+  if (segs[0] === 'category' && segs[1]) {
+    out.push({ label: tr('nav.categories') || 'Categories', to: localePath('/categories') })
+    out.push({ label: dyn?.dynamic || segs[1] })
+    return out
+  }
+  if (segs[0] === 'blog' && segs[1]) {
+    out.push({ label: tr('blog.title') || 'Blog', to: localePath('/blog') })
+    out.push({ label: dyn?.dynamic || segs[1] })
+    return out
+  }
+  if (dyn?.city && dyn?.categoryName) {
+    out.push({ label: tr('nav.categories') || 'Categories', to: localePath('/categories') })
+    out.push({ label: dyn.categoryName, to: localePath('/category/' + dyn.categorySlug) })
+    out.push({ label: dyn.city })
+    return out
+  }
+  // Generic fallback — translate via FALLBACK_LABELS or emit the raw slug.
+  for (let i = 0; i < segs.length; i++) {
+    acc += '/' + segs[i]
+    const labelKey = FALLBACK_LABELS[segs[i]]
+    const label = labelKey ? tr(labelKey) || segs[i] : segs[i]
+    out.push({ label, to: i < segs.length - 1 ? localePath(acc) : undefined })
   }
   return out
 }

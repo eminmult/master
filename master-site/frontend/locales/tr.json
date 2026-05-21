@@ -668,7 +668,7 @@
     "available": "Müsait",
     "skills_title": "Becerilerim",
     "load_more": "Daha fazla yükle",
-    "call_this_master": "Bu ustayi cagir",
+    "call_this_master": "Bu ustayı çağır",
     "currently_offline": "Usta su anda cevrimdisi",
     "reviews_short": "değerlendirme",
     "years": "yıl",
@@ -677,7 +677,8 @@
     "experience": "Tecrübe",
     "radius": "Yarıçap",
     "km": "km",
-    "sort_distance": "Mesafeye göre"
+    "sort_distance": "Mesafeye göre",
+    "not_accepting_now": "Şu anda sipariş kabul etmiyor"
   },
   "chat": {
     "title": "Mesajlar",
@@ -1071,5 +1072,12 @@
     "when_needed": "Ne zaman gereklidir",
     "how_to_choose": "Nasıl seçilir",
     "faq": "Sıkça sorulan sorular"
+  },
+  "blog": {
+    "title": "Blog",
+    "subtitle": "Ev tamiri ve hizmet rehberleri",
+    "empty": "Henüz yazı yok",
+    "seo_title": "Blog — itez.app ev hizmet rehberleri",
+    "seo_desc": "Tesisat, elektrik, temizlik ve diğer ev hizmetleri için pratik rehberler ve fiyat tavsiyeleri."
   }
 }

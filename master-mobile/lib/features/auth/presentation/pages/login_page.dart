@@ -152,7 +152,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                     const SizedBox(height: 16),
                     TextButton(
-                      onPressed: () => context.go('/register'),
+                      onPressed: () => context.pushReplacement('/register'),
                       child: Text(loc.auth_create_account, style: const TextStyle(color: HmColors.accent, fontWeight: FontWeight.w600)),
                     ),
                   ],

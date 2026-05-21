@@ -14,6 +14,7 @@
       <NuxtLink :to="localePath('/categories')">{{ $t('nav.services') }}</NuxtLink>
       <NuxtLink :to="localePath('/masters')">{{ $t('nav.masters') }}</NuxtLink>
       <NuxtLink :to="localePath('/how-it-works')">{{ $t('nav.how_it_works') }}</NuxtLink>
+      <NuxtLink :to="localePath('/blog')">{{ $t('blog.title') }}</NuxtLink>
     </nav>
 
     <div class="hm-actions">
@@ -139,6 +140,7 @@
       <NuxtLink :to="localePath('/categories')" @click="mobileMenu = false">{{ $t('nav.services') }}</NuxtLink>
       <NuxtLink :to="localePath('/masters')" @click="mobileMenu = false">{{ $t('nav.masters') }}</NuxtLink>
       <NuxtLink :to="localePath('/how-it-works')" @click="mobileMenu = false">{{ $t('nav.how_it_works') }}</NuxtLink>
+      <NuxtLink :to="localePath('/blog')" @click="mobileMenu = false">{{ $t('blog.title') }}</NuxtLink>
       <hr />
       <div class="hm-mobile-lang">
         <NuxtLink
@@ -251,7 +253,22 @@ async function onPickLocale(code: string) {
   } catch { /* unauth or network — local state still applies */ }
 }
 
+// Pages that have per-locale slugs (translated category, master, city+category
+// URLs) publish a path-per-locale map via useSeoHead → useState('hm-locale-
+// links'). When present, the lang switcher prefers it over switchLocalePath
+// so /category/santexnik → /en/category/plumber rather than /en/category/santexnik.
+const localeLinks = useState<Record<string, string> | null>('hm-locale-links', () => null)
+
+// Clear stale per-locale links on every navigation so a previous page's
+// translated-slug map doesn't bleed into the next route. Each page that has
+// localized slugs publishes a fresh map via useSeoHead → useState.
+watch(() => route.path, () => { localeLinks.value = null })
+
 function getLocalePath(code: string): string {
+  const mapped = localeLinks.value?.[code]
+  if (mapped) {
+    return code === 'az' ? mapped : '/' + code + mapped
+  }
   const p = switchLocalePath(code)
   if (p) return p
   let clean = route.path

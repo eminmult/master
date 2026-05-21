@@ -677,7 +677,8 @@
     "experience": "Experience",
     "radius": "Radius",
     "km": "km",
-    "sort_distance": "By distance"
+    "sort_distance": "By distance",
+    "not_accepting_now": "Not accepting orders right now"
   },
   "chat": {
     "title": "Messages",
@@ -1071,5 +1072,12 @@
     "when_needed": "When you need this",
     "how_to_choose": "How to pick a good pro",
     "faq": "FAQ"
+  },
+  "blog": {
+    "title": "Blog",
+    "subtitle": "Home repair & services guides",
+    "empty": "No posts yet",
+    "seo_title": "Blog — itez.app home services guides",
+    "seo_desc": "Practical guides on home repair pricing, plumbing, electrical work, cleaning and other home services."
   }
 }

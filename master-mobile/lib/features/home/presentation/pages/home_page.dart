@@ -46,7 +46,11 @@ class HomePage extends ConsumerWidget {
                     children: [
                       InkWell(
                         borderRadius: BorderRadius.circular(HmRadius.pill),
-                        onTap: () => isGuest ? context.go('/login') : context.go('/profile'),
+                        // push (not go) when entering the auth funnel from a
+                        // tab — keeps /home on the stack so edge-swipe-back
+                        // returns to it. /profile is a bottom-nav tab so it
+                        // still uses go.
+                        onTap: () => isGuest ? context.push('/login') : context.go('/profile'),
                         child: avatarUrl != null
                             ? HmAvatar(url: avatarUrl, size: 40, ring: true)
                             : Container(
@@ -110,7 +114,7 @@ class HomePage extends ConsumerWidget {
             alignment: Alignment.bottomCenter,
             child: HmBottomNav(
               active: HmTab.home,
-              onChanged: (t) => _onTab(context, t),
+              onChanged: (t) => _onTab(context, t, isGuest),
             ),
           ),
         ],
@@ -118,12 +122,19 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  void _onTab(BuildContext context, HmTab tab) {
+  void _onTab(BuildContext context, HmTab tab, bool isGuest) {
     switch (tab) {
       case HmTab.home: break;
-      case HmTab.bookings: context.go('/orders'); break;
       case HmTab.announcements: context.go('/announcements'); break;
-      case HmTab.profile: context.go('/profile'); break;
+      // Protected tabs: when a guest taps them, push the auth gate instead of
+      // letting the global router redirect handle it (a redirect from go()
+      // wipes the stack, leaving nothing to swipe back to).
+      case HmTab.bookings:
+        isGuest ? context.push('/login?next=/orders') : context.go('/orders');
+        break;
+      case HmTab.profile:
+        isGuest ? context.push('/login?next=/profile') : context.go('/profile');
+        break;
     }
   }
 }
@@ -147,7 +158,7 @@ class _AddressBar extends ConsumerWidget {
 
     if (isGuest) {
       return _BarShell(
-        onTap: () => context.go('/login'),
+        onTap: () => context.push('/login'),
         smallLabel: loc.home_welcome,
         title: loc.home_sign_in_register,
         leading: Icons.login_rounded,

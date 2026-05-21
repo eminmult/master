@@ -21,3 +21,9 @@ Schedule::command('orders:expire-pending --pending-minutes=1440 --searching-minu
 Schedule::command('orders:auto-escalate')
     ->dailyAt('03:00')
     ->withoutOverlapping();
+
+// One-time review-request nudge for completed orders without a review.
+// SEO-critical: AggregateRating in SERPs is driven by review volume.
+Schedule::command('reviews:remind')
+    ->dailyAt('10:00')
+    ->withoutOverlapping();

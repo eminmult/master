@@ -53,24 +53,29 @@ class MasterApp extends ConsumerWidget {
       // RTL is automatic — Flutter inspects the locale and flips Directionality.
       routerConfig: router,
       builder: (context, child) {
-        // Android back-button policy:
-        // - Deep route (router can pop) → pop one step.
-        // - Tab root (/orders, /profile, /announcements, /categories) → go to /home.
-        // - /home or /  → minimize the app (SystemNavigator.pop).
-        return PopScope(
-          canPop: false,
-          onPopInvokedWithResult: (didPop, _) {
-            if (didPop) return;
+        // Android hardware back button policy:
+        // - Deep route (router can pop) → pop one step (matches edge-swipe).
+        // - Tab root (/orders, /profile, /announcements, /categories) → /home.
+        // - /home or / → return false so the OS handles it (minimize).
+        //
+        // We use BackButtonListener instead of a top-level PopScope because
+        // PopScope at MaterialApp.builder level sits OUTSIDE the GoRouter
+        // Navigator, so its onPopInvoked callback was not firing on Flutter
+        // 3.24+ — the OS back went straight to the platform handler and the
+        // app exited. BackButtonListener intercepts the platform event before
+        // the navigator gets it and lets us route manually.
+        return BackButtonListener(
+          onBackButtonPressed: () async {
             if (router.canPop()) {
               router.pop();
-              return;
+              return true; // consumed
             }
             final loc = router.routerDelegate.currentConfiguration.uri.toString();
             if (loc == '/home' || loc == '/') {
-              SystemNavigator.pop();
-            } else {
-              router.go('/home');
+              return false; // let OS minimize the app
             }
+            router.go('/home');
+            return true;
           },
           child: Stack(children: [
             if (child != null) child,
