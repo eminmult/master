@@ -136,12 +136,12 @@ const heading = computed(() => {
 useSeoHead(() => {
   const c = category.value
   const cityName = payload.value?.cityName || citySlug.value
+  // Single canonical /{city}/{category} URL for every locale.
+  // (useSeoHead defaults all locale alternates to the same canonical path.)
   const hreflangPaths: Record<string, string> = {}
-  if (c?.slug_translations) {
-    for (const l of ['az', 'ru', 'en', 'tr', 'ar']) {
-      const catSlug = c.slug_translations[l] || c.slug_az || c.slug
-      hreflangPaths[l] = `/${citySlug.value}/${catSlug}`
-    }
+  // Canonical-slug redirect if a stale locale-specific slug was linked.
+  if (c && c.slug && c.slug !== categorySlug.value) {
+    void navigateTo(localePath(`/${citySlug.value}/${c.slug}`), { redirectCode: 301 })
   }
   return {
     title: c ? $t('seo.citycat_title', { category: c.name, city: cityName }) : '',

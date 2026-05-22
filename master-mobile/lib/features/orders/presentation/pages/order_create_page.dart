@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:master_mobile/core/api/api_exception.dart';
 import 'package:master_mobile/core/auth/auth_controller.dart';
 import 'package:master_mobile/core/i18n/category_helpers.dart';
+import 'package:master_mobile/core/routing/tab_switcher.dart';
 import 'package:master_mobile/core/i18n/locale_controller.dart';
 import 'package:master_mobile/core/theme/design_tokens.dart';
 import 'package:master_mobile/features/addresses/data/addresses_repository.dart';
@@ -185,7 +186,9 @@ class _OrderCreatePageState extends ConsumerState<OrderCreatePage> {
                     } else if (context.canPop()) {
                       context.pop();
                     } else {
-                      context.go('/home');
+                      // Deep-link / push-notification entry with no
+                      // back-stack — drop the user on the Home tab.
+                      ref.switchTab(context, AppTab.home);
                     }
                   },
                 ),

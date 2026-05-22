@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:master_mobile/core/i18n/category_helpers.dart';
 import 'package:master_mobile/core/i18n/locale_controller.dart';
+import 'package:master_mobile/l10n/generated/app_localizations.dart';
 import 'package:master_mobile/core/theme/design_tokens.dart';
 import 'package:master_mobile/features/categories/data/categories_repository.dart';
 import 'package:master_mobile/features/master/data/masters_repository.dart';
@@ -125,7 +126,7 @@ class _SpecialistListPageState extends ConsumerState<SpecialistListPage> {
 
   static String headTitleClipped(String t) => t.length > 32 ? '${t.substring(0, 30)}…' : t;
 
-  static String? _slugTitle(loc, String? slug) {
+  static String? _slugTitle(AppLocalizations loc, String? slug) {
     if (slug == null) return null;
     return localizedCategoryName(loc, ServiceCategory(id: 0, name: slug, slug: slug));
   }

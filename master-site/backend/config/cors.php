@@ -5,6 +5,7 @@ return [
     'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     'allowed_origins' => array_filter([
         env('FRONTEND_URL', 'https://itez.app'),
+        'https://itez.app',
         'http://localhost:3000',
         'http://localhost:8093',
         'http://localhost:8095',  // Flutter web preview

@@ -19,13 +19,13 @@ final sharedPrefsProvider = Provider<SharedPreferences>((_) {
 class ActiveAddressNotifier extends Notifier<int?> {
   static const _key = 'active_address_id';
 
-  late final SharedPreferences _prefs;
+  // Read at point-of-use — sharedPrefsProvider is an overridden singleton
+  // so `ref.read` is consistent across calls. Using `late final` inside
+  // build() throws on re-init.
+  SharedPreferences get _prefs => ref.read(sharedPrefsProvider);
 
   @override
-  int? build() {
-    _prefs = ref.watch(sharedPrefsProvider);
-    return _prefs.getInt(_key);
-  }
+  int? build() => _prefs.getInt(_key);
 
   Future<void> setActive(int id) async {
     state = id;

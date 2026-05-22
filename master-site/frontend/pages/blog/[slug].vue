@@ -40,6 +40,13 @@ const { data: post } = await useAsyncData(
   { default: () => null, watch: [slug] },
 )
 
+// Canonical-slug redirect: each locale has its own slug; if the URL was
+// reached with a different locale's slug (e.g. user pasted /en/blog/<RU-slug>)
+// hop to the localized one. 301 keeps search engines happy.
+if (post.value?.slug && post.value.slug !== slug.value) {
+  await navigateTo(localePath('/blog/' + post.value.slug), { redirectCode: 301 })
+}
+
 // Minimal Markdown → HTML. Blog posts are admin-only so we don't sanitise
 // (admins can already deploy code). For untrusted authors swap in DOMPurify.
 const bodyHtml = computed(() => {
@@ -56,13 +63,25 @@ const bodyHtml = computed(() => {
     .replace(/$/, '</p>')
 })
 
-useSeoHead(() => ({
-  title: post.value?.title || $t('blog.title'),
-  description: post.value?.excerpt || undefined,
-  canonicalPath: `/blog/${slug.value}`,
-  image: post.value?.hero_url,
-  ogType: 'article',
-}))
+useSeoHead(() => {
+  const p = post.value
+  // Each locale has its own slug — feed the per-locale path map into the
+  // header language switcher and hreflang alternates.
+  const hreflangPaths: Record<string, string> = {}
+  if (p?.slug_translations) {
+    for (const [l, s] of Object.entries(p.slug_translations as Record<string, string>)) {
+      hreflangPaths[l] = `/blog/${s}`
+    }
+  }
+  return {
+    title: p?.title || $t('blog.title'),
+    description: p?.excerpt || undefined,
+    canonicalPath: `/blog/${p?.slug || slug.value}`,
+    hreflangPaths,
+    image: p?.hero_url,
+    ogType: 'article',
+  }
+})
 
 // Article JSON-LD for rich result eligibility.
 useHead(() => {

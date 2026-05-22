@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:master_mobile/core/api/api_exception.dart';
 import 'package:master_mobile/core/auth/auth_controller.dart';
 import 'package:master_mobile/core/i18n/category_helpers.dart';
+import 'package:master_mobile/core/routing/tab_switcher.dart';
 import 'package:master_mobile/core/i18n/locale_controller.dart';
 import 'package:master_mobile/core/theme/design_tokens.dart';
 import 'package:master_mobile/features/applications/data/applications_repository.dart';
@@ -120,7 +121,10 @@ class _AnnouncementDetailPageState
       if (context.canPop()) {
         context.pop();
       } else {
-        context.go('/orders');
+        // Withdrawing from a deep-link entry — fall through to the
+        // Orders tab so the user lands on a familiar surface instead
+        // of staring at an empty announcement detail.
+        ref.switchTab(context, AppTab.orders);
       }
     } on ApiException catch (e) {
       if (!mounted) return;

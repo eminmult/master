@@ -92,6 +92,23 @@ services:
               # bootstrap script (max-age=14400) before our no-store hint took
               # effect, so we have to give it a fresh URL on every reload.
               sed -i "s|flutter_bootstrap\.js[^\"]*|flutter_bootstrap.js?v=$$ts|g" build/web/index.html
+              # Kill-switch service worker — Flutter --pwa-strategy=none
+              # emits an empty SW but still calls registerServiceWorker,
+              # so users who installed an EARLIER non-empty SW keep being
+              # served from the stale cache. Inline the kill-switch with
+              # printf (heredoc breaks the docker-compose $$ escaping).
+              printf '%s\n' \
+                "self.addEventListener('install', () => self.skipWaiting());" \
+                "self.addEventListener('activate', (e) => {" \
+                "  e.waitUntil((async () => {" \
+                "    const keys = await caches.keys();" \
+                "    await Promise.all(keys.map((k) => caches.delete(k)));" \
+                "    await self.registration.unregister();" \
+                "    const clients = await self.clients.matchAll();" \
+                "    clients.forEach((c) => c.navigate(c.url));" \
+                "  })());" \
+                "});" \
+                > build/web/flutter_service_worker.js
               echo "==> build OK ($$(date +%H:%M:%S)) buster=$$ts"
           else
               echo "!!! build FAILED ($(date +%H:%M:%S))"

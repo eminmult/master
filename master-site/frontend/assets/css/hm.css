@@ -1937,6 +1937,40 @@ html.theme-light .hm-person-stat-v.accent { color: #b07f00; }
   margin: 0;
 }
 
+/* Bio rendering — paragraph + bulleted service list. The cleanup pipeline
+   produces structured text; here we visualise it: intro paragraph, services
+   list with custom yellow tick bullets, then a closing line. */
+.hm-person-bio p + p,
+.hm-person-bio p + ul,
+.hm-person-bio ul + p {
+  margin-top: 14px;
+}
+.hm-person-bio ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.hm-person-bio li {
+  position: relative;
+  padding-left: 22px;
+  font-size: 15px;
+  color: var(--hm-text-2);
+  line-height: 1.55;
+}
+.hm-person-bio li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--hm-accent);
+}
+html.theme-light .hm-person-bio li::before { background: #b07f00; }
+
 .hm-specialty-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

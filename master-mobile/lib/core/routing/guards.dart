@@ -49,12 +49,14 @@ class OnboardingGuard implements RouteGuard {
 ///
 /// - Auth flow (/login, /register, /verify, …) — kicks an authenticated
 ///   user back to /home (or to ?next= when one is set), prevents re-login.
-/// - Splash (/) — resolves to /home regardless of auth state.
-/// - Inside the shell (Orders, Profile and their drill-downs) — does NOT
-///   bounce a guest to /login. The pages themselves wrap their content in
-///   `AuthGate`, which renders a "Sign in to continue" placeholder with a
-///   CTA that pushes /login?next=…. This keeps the bottom-nav visible and
-///   preserves the user's tab context across the auth round-trip.
+/// - Splash (/) — resolves to /home for both authenticated and guest users
+///   (the only public surface that's always reachable).
+/// - Protected pages (Orders, Profile and their drill-downs) — NO redirect.
+///   The pages themselves render an inline LoginPage when the user is a
+///   guest. We avoid `redirect` here because go-router treats it like a
+///   `go()` (stack replace), which would wipe the back-stack a guest had
+///   built up and break edge-swipe-back. Pages handle the gating inline so
+///   the user's history is preserved.
 class AuthGuard implements RouteGuard {
   @override
   String? evaluate(Ref ref, GoRouterState state) {
@@ -71,7 +73,7 @@ class AuthGuard implements RouteGuard {
       AuthAuthenticated() when loc == Routes.splash => Routes.home,
       AuthAuthenticated() => null,
       AuthUnauthenticated() when loc == Routes.splash => Routes.home,
-      AuthUnauthenticated() => null, // protected pages render via AuthGate
+      AuthUnauthenticated() => null, // pages render LoginPage inline
     };
   }
 }

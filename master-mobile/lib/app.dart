@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:master_mobile/core/auth/auth_controller.dart';
 import 'package:master_mobile/core/i18n/locale_controller.dart';
 import 'package:master_mobile/core/routing/router.dart';
+import 'package:master_mobile/core/routing/tab_history.dart';
 import 'package:master_mobile/core/theme/app_theme.dart';
 import 'package:master_mobile/core/ui/snackbar_service.dart';
 import 'package:master_mobile/features/calls/data/call_service.dart';
@@ -70,14 +71,24 @@ class MasterApp extends ConsumerWidget {
           canPop: false,
           onPopInvokedWithResult: (didPop, _) {
             if (didPop) return;
+
+            // 1) Within-branch drill-down → pop one step.
             if (router.canPop()) {
               router.pop();
               return;
             }
-            final loc = router.routerDelegate.currentConfiguration.uri.toString();
+
+            // 2) Tab root: home is the absolute root. From any other tab
+            //    root, back goes to home. From home, back exits the app.
+            //    Matches the user's expectation that "back from anywhere
+            //    in the nav goes home, not to whichever tab I happened to
+            //    visit last" — that "previous-tab" mental model proved
+            //    confusing in testing.
+            final loc = router.routerDelegate.currentConfiguration.uri.path;
             if (loc == '/home' || loc == '/') {
               SystemNavigator.pop();
             } else {
+              ref.read(tabHistoryProvider).clear();
               router.go('/home');
             }
           },

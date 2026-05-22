@@ -107,24 +107,23 @@ useSeoHead(() => {
   const rating = masters.value.length
     ? (masters.value.reduce((s, m) => s + Number(m.rating_avg || 0), 0) / masters.value.length).toFixed(1)
     : '4.8'
-  // Build per-locale hreflang paths from category.slug_translations so each
-  // language gets its own localized slug in the alternate URLs.
-  const hreflangPaths: Record<string, string> = {}
-  if (c?.slug_translations) {
-    for (const l of ['az', 'ru', 'en', 'tr', 'ar']) {
-      const slugForLocale = c.slug_translations[l] || c.slug_az || c.slug
-      hreflangPaths[l] = `/category/${slugForLocale}`
-    }
-  }
+  // URL is one canonical /category/{slug} across all locales — no
+  // hreflangPaths override needed. useSeoHead defaults each locale's
+  // alternate to the same canonical path with the locale prefix.
   return {
     title: c ? $t('seo.category_title', { name: c.name, n: count, rating }) : $t('seo.categories_title'),
     description: c
       ? (c.description ? c.description + ' · ' + $t('seo.category_desc', { name: c.name, n: count, rating }) : $t('seo.category_desc', { name: c.name, n: count, rating }))
       : $t('seo.categories_desc'),
-    canonicalPath: `/category/${slug.value}`,
-    hreflangPaths,
+    canonicalPath: `/category/${c?.slug || slug.value}`,
   }
 })
+
+// Canonical-slug redirect — if a stale or legacy locale-specific slug was
+// linked anywhere, hop to the canonical URL.
+if (category.value && category.value.slug && category.value.slug !== slug.value) {
+  await navigateTo(localePath('/category/' + category.value.slug), { redirectCode: 301 })
+}
 
 // JSON-LD: Service + ItemList of providers. FAQPage will be appended once
 // Phase 3 AI-generated FAQs land in category_contents.

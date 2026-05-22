@@ -9,6 +9,7 @@ import 'package:master_mobile/core/api/api_exception.dart';
 import 'package:master_mobile/core/auth/auth_controller.dart';
 import 'package:master_mobile/core/auth/password_policy.dart';
 import 'package:master_mobile/core/i18n/locale_controller.dart';
+import 'package:master_mobile/l10n/generated/app_localizations.dart';
 import 'package:master_mobile/core/theme/design_tokens.dart';
 import 'package:master_mobile/features/auth/data/models/user.dart';
 import 'package:master_mobile/features/profile/data/profile_repository.dart';
@@ -386,7 +387,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
 
 class _Header extends StatelessWidget {
   const _Header({required this.loc});
-  final dynamic loc;
+  final AppLocalizations loc;
   @override
   Widget build(BuildContext context) {
     return Padding(

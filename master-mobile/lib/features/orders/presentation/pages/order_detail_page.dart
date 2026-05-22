@@ -15,6 +15,7 @@ import 'package:master_mobile/core/auth/auth_controller.dart';
 import 'package:master_mobile/core/i18n/category_helpers.dart';
 import 'package:master_mobile/core/i18n/locale_controller.dart';
 import 'package:master_mobile/core/i18n/order_helpers.dart';
+import 'package:master_mobile/l10n/generated/app_localizations.dart';
 import 'package:master_mobile/core/theme/brand_colors.dart';
 import 'package:master_mobile/core/theme/design_tokens.dart';
 import 'package:master_mobile/features/applications/data/applications_repository.dart';
@@ -1376,7 +1377,7 @@ class _ActionPrompt extends StatelessWidget {
     }
   }
 
-  Widget? _buildBody(BuildContext context, dynamic loc) {
+  Widget? _buildBody(BuildContext context, AppLocalizations loc) {
     // pending_master / searching_master — 24h auto-cancel warning + actions
     if (order.status == OrderStatus.pendingMaster ||
         order.status == OrderStatus.searching) {
@@ -1441,7 +1442,7 @@ class _ActionPrompt extends StatelessWidget {
     return null;
   }
 
-  String _clientWaitingMessage(OrderStatus s, dynamic loc) {
+  String _clientWaitingMessage(OrderStatus s, AppLocalizations loc) {
     return switch (s) {
       OrderStatus.confirmed => loc.order_banner_confirmed,
       OrderStatus.accepted => loc.order_banner_confirmed,

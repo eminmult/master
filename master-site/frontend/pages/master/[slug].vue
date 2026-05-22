@@ -53,10 +53,19 @@
               </div>
             </section>
 
-            <!-- About -->
-            <section v-if="profile.master_profile?.description" class="hm-person-section">
+            <!-- About — renders the bio with proper paragraphs and bullet
+                 lists. The cleanup pipeline (TranslateContentJob.cleanupText)
+                 outputs structure: prose paragraph + "Services:" header +
+                 bulleted list (lines starting with '• ') + closing line. We
+                 parse here so it doesn't collapse into a wall of text. -->
+            <section v-if="profile.master_profile?.description" class="hm-person-section hm-person-bio">
               <h2 class="hm-person-section-title">{{ $t('person.about') }}</h2>
-              <p>{{ profile.master_profile.description }}</p>
+              <template v-for="(block, i) in bioBlocks" :key="i">
+                <ul v-if="block.type === 'list'">
+                  <li v-for="(item, j) in block.items" :key="j">{{ item }}</li>
+                </ul>
+                <p v-else>{{ block.text }}</p>
+              </template>
             </section>
 
             <!-- Location (master) -->
@@ -362,12 +371,9 @@ useSeoHead(() => {
   const p = profile.value
   if (!p) return { title: $t('seo.masters_title', { n: 0 }), canonicalPath: '/master/' + slug.value }
   const primaryCat = p.master_profile?.categories?.[0]
+  // Single canonical /master/{slug} for every locale; useSeoHead defaults
+  // hreflang alternates to the same path with locale prefixes.
   const hreflangPaths: Record<string, string> = {}
-  if (p.slug_translations) {
-    for (const l of ['az', 'ru', 'en', 'tr', 'ar']) {
-      hreflangPaths[l] = '/master/' + (p.slug_translations[l] || p.slug)
-    }
-  }
   const desc = p.master_profile?.description
     ? p.master_profile.description.slice(0, 155)
     : $t('seo.master_desc', {
@@ -399,6 +405,42 @@ const initials = computed(() => {
   const p = profile.value
   if (!p) return ''
   return `${(p.first_name || '').charAt(0)}${(p.last_name || '').charAt(0)}`.toUpperCase()
+})
+
+// Parse the master bio into typed blocks: paragraph or bulleted list.
+// Bullet character is U+2022 ('• ') as produced by TranslateContentJob.
+const bioBlocks = computed(() => {
+  const raw = profile.value?.master_profile?.description || ''
+  if (!raw) return []
+  const lines = raw.split(/\r?\n/)
+  const blocks: { type: 'para' | 'list'; text?: string; items?: string[] }[] = []
+  let paraBuf: string[] = []
+  let listBuf: string[] = []
+  const flushPara = () => {
+    if (paraBuf.length) {
+      blocks.push({ type: 'para', text: paraBuf.join(' ').trim() })
+      paraBuf = []
+    }
+  }
+  const flushList = () => {
+    if (listBuf.length) {
+      blocks.push({ type: 'list', items: listBuf })
+      listBuf = []
+    }
+  }
+  for (const line of lines) {
+    const t = line.trim()
+    if (!t) { flushPara(); flushList(); continue }
+    if (t.startsWith('• ') || t.startsWith('* ') || t.startsWith('- ')) {
+      flushPara()
+      listBuf.push(t.replace(/^[•*\-]\s+/, ''))
+    } else {
+      flushList()
+      paraBuf.push(t)
+    }
+  }
+  flushPara(); flushList()
+  return blocks
 })
 
 const hasPortfolio = computed(() => (profile.value?.master_profile?.portfolio?.length || 0) > 0)

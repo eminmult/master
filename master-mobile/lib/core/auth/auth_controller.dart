@@ -36,13 +36,15 @@ final authStateProvider =
     NotifierProvider<AuthController, AuthState>(AuthController.new);
 
 class AuthController extends Notifier<AuthState> {
-  late final AuthRepository _repo;
-  late final AuthStorage _storage;
+  // Read dependencies at point-of-use via ref.read instead of caching them
+  // as `late final` in build(). Notifier.build() can run more than once
+  // (e.g., on a watched-dependency change), and `late final` re-assignment
+  // throws "Field has already been initialized" on the second run.
+  AuthRepository get _repo => ref.read(authRepositoryProvider);
+  AuthStorage get _storage => ref.read(authStorageProvider);
 
   @override
   AuthState build() {
-    _repo = ref.watch(authRepositoryProvider);
-    _storage = ref.watch(authStorageProvider);
     // Kick off /auth/me asynchronously — state transitions to authenticated
     // or unauthenticated once we have an answer. Initial state is Loading.
     Future.microtask(_bootstrap);

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:master_mobile/core/auth/auth_controller.dart';
 import 'package:master_mobile/core/i18n/locale_controller.dart';
+import 'package:master_mobile/l10n/generated/app_localizations.dart';
+import 'package:master_mobile/core/routing/tab_switcher.dart';
 import 'package:master_mobile/core/theme/design_tokens.dart';
 import 'package:master_mobile/features/addresses/data/addresses_repository.dart';
 import 'package:master_mobile/features/master/data/masters_repository.dart';
@@ -78,7 +80,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     _PrefRow(
                       icon: Icons.calendar_today_rounded,
                       label: loc.my_orders_title,
-                      onTap: () => context.go('/orders'),
+                      // Tab-switch (not go) — preserves Profile branch state
+                      // so swiping back from Orders lands here on the same
+                      // scroll position with forms still half-filled.
+                      onTap: () => ref.switchTab(context, AppTab.orders),
                     ),
                     if (!isMaster)
                       _PrefRow(
@@ -133,7 +138,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
 
 class _Header extends StatelessWidget {
   const _Header({required this.loc});
-  final dynamic loc;
+  final AppLocalizations loc;
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -1384,7 +1389,7 @@ class _Switch extends StatelessWidget {
 
 class _LogoutButton extends StatelessWidget {
   const _LogoutButton({required this.loc, required this.onTap});
-  final dynamic loc;
+  final AppLocalizations loc;
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {

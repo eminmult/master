@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:master_mobile/core/auth/auth_controller.dart';
-import 'package:master_mobile/core/i18n/locale_controller.dart';
-import 'package:master_mobile/core/routing/auth_gate.dart';
 import 'package:master_mobile/core/routing/guards.dart';
 import 'package:master_mobile/core/routing/route_error_page.dart';
 import 'package:master_mobile/core/routing/routes.dart';
@@ -67,10 +65,19 @@ import 'package:master_mobile/features/wallet/presentation/wallet_page.dart';
 /// Redirect logic is composed from RouteGuard instances (OnboardingGuard,
 /// AuthGuard) — adding a new guard means a new class, not a new branch in
 /// the giant switch.
+/// Top-level navigator key. Routes pinned to this key render OVER the
+/// shell (covering the bottom nav) — used for drill-downs that should be
+/// reachable from ANY tab without breaking the per-branch back stack. For
+/// example, tapping a notification from home pushes /notifications on the
+/// root navigator so swipe-back returns to home, not to the profile tab
+/// where /notifications used to live.
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final routerProvider = Provider<GoRouter>((ref) {
   final guards = RouteGuardChain([OnboardingGuard(), AuthGuard()]);
 
   return GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: Routes.splash,
     refreshListenable: _AuthListenable(ref),
     redirect: (context, state) => guards.evaluate(ref, state),
@@ -116,6 +123,38 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.verifyPhone,
         pageBuilder: (_, s) => _cp(s, const VerifyPhonePage()),
+      ),
+
+      // ─── Root-level drill-downs ────────────────────────────────────────
+      // Pages reachable from MORE than one tab branch. Pinning them to the
+      // root navigator means they push OVER the shell (bottom-nav hides)
+      // and swipe-back returns to whichever branch initiated the push —
+      // no surprise tab switches, continuous edge-swipe-back from any
+      // entry point. Matches the Uber / Bolt / DoorDash pattern.
+      GoRoute(
+        path: '/announcements/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (_, s) {
+          final appParam = s.uri.queryParameters['app'];
+          return _cp(
+            s,
+            AnnouncementDetailPage(
+              id: int.parse(s.pathParameters['id']!),
+              existingApplicationId:
+                  appParam != null ? int.tryParse(appParam) : null,
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: Routes.notifications,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (_, s) => _cp(s, const NotificationsPage()),
+      ),
+      GoRoute(
+        path: Routes.addressesNew,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (_, s) => _cp(s, const AddAddressPage()),
       ),
 
       // ─── Stateful shell with 4 branches ────────────────────────────────
@@ -186,22 +225,9 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: Routes.announcements,
                 pageBuilder: (_, s) => _cp(s, const AnnouncementsPage()),
-                routes: [
-                  GoRoute(
-                    path: ':id',
-                    pageBuilder: (_, s) {
-                      final appParam = s.uri.queryParameters['app'];
-                      return _cp(
-                        s,
-                        AnnouncementDetailPage(
-                          id: int.parse(s.pathParameters['id']!),
-                          existingApplicationId:
-                              appParam != null ? int.tryParse(appParam) : null,
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                // /announcements/:id is registered at root navigator level
+                // (see above) so it covers the shell and can be reached from
+                // any branch with continuous swipe-back.
               ),
               GoRoute(
                 path: '/chat/application/:id',
@@ -213,23 +239,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
 
-          // ─ Branch 2: Orders (auth-gated via AuthGate widget) ────────
+          // ─ Branch 2: Orders (guest sees inline LoginPage) ───────────
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: Routes.orders,
-                pageBuilder: (_, s) => _cp(
-                  s,
-                  Builder(builder: (ctx) {
-                    final loc = ctx.l10n;
-                    return AuthGate(
-                      nextPath: Routes.orders,
-                      placeholderTitle: loc.guest_orders_title,
-                      placeholderBody: loc.guest_orders_body,
-                      child: const MyOrdersPage(),
-                    );
-                  }),
-                ),
+                pageBuilder: (_, s) => _cp(s, const _AuthOr(child: MyOrdersPage())),
               ),
               GoRoute(
                 path: '/order/create',
@@ -271,23 +286,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
 
-          // ─ Branch 3: Profile (auth-gated via AuthGate widget) ───────
+          // ─ Branch 3: Profile (guest sees inline LoginPage) ──────────
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: Routes.profile,
-                pageBuilder: (_, s) => _cp(
-                  s,
-                  Builder(builder: (ctx) {
-                    final loc = ctx.l10n;
-                    return AuthGate(
-                      nextPath: Routes.profile,
-                      placeholderTitle: loc.guest_profile_title,
-                      placeholderBody: loc.guest_profile_body,
-                      child: const ProfilePage(),
-                    );
-                  }),
-                ),
+                pageBuilder: (_, s) => _cp(s, const _AuthOr(child: ProfilePage())),
                 routes: [
                   GoRoute(
                     path: 'edit',
@@ -313,14 +317,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: Routes.settings,
                 pageBuilder: (_, s) => _cp(s, const SettingsPage()),
               ),
-              GoRoute(
-                path: Routes.notifications,
-                pageBuilder: (_, s) => _cp(s, const NotificationsPage()),
-              ),
-              GoRoute(
-                path: Routes.addressesNew,
-                pageBuilder: (_, s) => _cp(s, const AddAddressPage()),
-              ),
+              // /notifications and /addresses/new are registered at root
+              // navigator level (see above) — they're reachable from any
+              // tab, so they push over the shell instead of pinning to
+              // Profile branch.
               GoRoute(
                 path: Routes.chat,
                 pageBuilder: (_, s) => _cp(s, const ChatPage()),
@@ -353,4 +353,23 @@ class _Splash extends StatelessWidget {
         backgroundColor: HmColors.bg,
         body: Center(child: CircularProgressIndicator(color: HmColors.accent)),
       );
+}
+
+/// Render [child] for authenticated users, otherwise render the LoginPage
+/// inline IN THE SAME branch slot. No redirect = no stack replace = swipe-
+/// back keeps working as the user expects. Once the user authenticates,
+/// `ref.watch(authStateProvider)` rebuilds and the child takes over.
+class _AuthOr extends ConsumerWidget {
+  const _AuthOr({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authStateProvider);
+    return switch (auth) {
+      AuthAuthenticated() => child,
+      AuthLoading() => const _Splash(),
+      AuthUnauthenticated() => const LoginPage(),
+    };
+  }
 }

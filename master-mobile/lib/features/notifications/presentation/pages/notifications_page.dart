@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:master_mobile/core/auth/auth_controller.dart';
 import 'package:master_mobile/core/i18n/locale_controller.dart';
+import 'package:master_mobile/l10n/generated/app_localizations.dart';
 import 'package:master_mobile/core/theme/design_tokens.dart';
 import 'package:master_mobile/features/notifications/data/notifications_providers.dart';
 import 'package:master_mobile/features/notifications/data/notifications_repository.dart';
@@ -186,14 +187,14 @@ class NotificationsPage extends ConsumerWidget {
     ];
   }
 
-  String _groupLabel(_Bucket b, dynamic loc) => switch (b) {
+  String _groupLabel(_Bucket b, AppLocalizations loc) => switch (b) {
         _Bucket.today => loc.notif_group_today,
         _Bucket.yesterday => loc.notif_group_yesterday,
         _Bucket.thisWeek => loc.notif_group_this_week,
         _Bucket.older => loc.notif_group_older,
       };
 
-  String _relTime(DateTime d, dynamic loc) {
+  String _relTime(DateTime d, AppLocalizations loc) {
     final diff = DateTime.now().difference(d.toLocal());
     if (diff.inMinutes < 1) return loc.notif_now;
     if (diff.inMinutes < 60) return loc.notif_min_ago(diff.inMinutes);

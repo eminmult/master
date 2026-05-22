@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:master_mobile/core/auth/auth_controller.dart';
 import 'package:master_mobile/core/i18n/category_helpers.dart';
 import 'package:master_mobile/core/i18n/locale_controller.dart';
+import 'package:master_mobile/core/routing/tab_switcher.dart';
 import 'package:master_mobile/core/theme/design_tokens.dart';
 import 'package:master_mobile/features/addresses/data/active_address_controller.dart';
 import 'package:master_mobile/features/addresses/data/addresses_repository.dart';
@@ -44,11 +45,14 @@ class HomePage extends ConsumerWidget {
                     children: [
                       InkWell(
                         borderRadius: BorderRadius.circular(HmRadius.pill),
-                        // push (not go) when entering the auth funnel from a
-                        // tab — keeps /home on the stack so edge-swipe-back
-                        // returns to it. /profile is a bottom-nav tab so it
-                        // still uses go.
-                        onTap: () => isGuest ? context.push('/login') : context.go('/profile'),
+                        // Guest → push login (keeps home stack alive so
+                        // edge-swipe returns here). Authenticated → switch
+                        // to the Profile tab branch via the shell so each
+                        // branch preserves its own scroll/state instead of
+                        // burning home's stack with go().
+                        onTap: () => isGuest
+                            ? context.push('/login')
+                            : ref.switchTab(context, AppTab.profile),
                         child: avatarUrl != null
                             ? HmAvatar(url: avatarUrl, size: 40, ring: true)
                             : Container(
@@ -98,7 +102,11 @@ class HomePage extends ConsumerWidget {
                 HmSectionHead(
                   title: loc.ann_title,
                   linkLabel: loc.common_see_all,
-                  onLinkTap: () => context.push('/announcements'),
+                  // "See all" → switch tab (intentional branch change so
+                  // the user gets the Announcements list with its own
+                  // history). Individual cards open detail at root-nav
+                  // level, which keeps swipe-back continuous to home.
+                  onLinkTap: () => ref.switchTab(context, AppTab.announcements),
                 ),
                 _AnnouncementsRow(
                   async: annAsync,

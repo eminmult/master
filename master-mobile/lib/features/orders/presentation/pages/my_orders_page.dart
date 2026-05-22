@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:master_mobile/core/api/api_exception.dart';
 import 'package:master_mobile/core/auth/auth_controller.dart';
+import 'package:master_mobile/l10n/generated/app_localizations.dart';
 import 'package:master_mobile/core/i18n/category_helpers.dart';
 import 'package:master_mobile/core/i18n/locale_controller.dart';
 import 'package:master_mobile/core/i18n/order_helpers.dart';
@@ -486,7 +487,7 @@ class _SectionWidget extends StatelessWidget {
     );
   }
 
-  String _label(_BucketKind k, dynamic loc) => switch (k) {
+  String _label(_BucketKind k, AppLocalizations loc) => switch (k) {
         _BucketKind.diqqet => loc.orders_section_attention,
         _BucketKind.active => loc.orders_section_active,
         _BucketKind.applications => loc.orders_section_my_applications,

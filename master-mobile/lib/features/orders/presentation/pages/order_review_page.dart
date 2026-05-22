@@ -8,6 +8,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:master_mobile/core/api/api_exception.dart';
 import 'package:master_mobile/core/auth/auth_controller.dart';
 import 'package:master_mobile/core/i18n/locale_controller.dart';
+import 'package:master_mobile/core/routing/tab_switcher.dart';
+import 'package:master_mobile/l10n/generated/app_localizations.dart';
 import 'package:master_mobile/core/theme/design_tokens.dart';
 import 'package:master_mobile/features/orders/data/models/order.dart';
 import 'package:master_mobile/features/orders/data/orders_repository.dart';
@@ -134,7 +136,7 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
         _done = true;
       });
       Future.delayed(const Duration(milliseconds: 1800), () {
-        if (mounted) context.go('/home');
+        if (mounted) ref.switchTab(context, AppTab.home);
       });
       return;
     } on ApiException catch (e) {
@@ -340,7 +342,7 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
     );
   }
 
-  String _ratingLabel(int r, dynamic loc) => switch (r) {
+  String _ratingLabel(int r, AppLocalizations loc) => switch (r) {
         0 => loc.review_label_pick,
         1 => loc.review_label_terrible,
         2 => loc.review_label_bad,
@@ -349,7 +351,7 @@ class _OrderReviewPageState extends ConsumerState<OrderReviewPage> {
         _ => loc.review_label_excellent,
       };
 
-  String _tagLabel(String t, dynamic loc) => switch (t) {
+  String _tagLabel(String t, AppLocalizations loc) => switch (t) {
         'punctual' => loc.review_tag_punctual,
         'polite' => loc.review_tag_polite,
         'professional' => loc.review_tag_professional,
