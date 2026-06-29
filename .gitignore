@@ -8,6 +8,7 @@
 # Allow only the project tree
 !/master-site
 !/master-mobile
+!/master-mobile-v2
 !/.gitignore
 !/README.md
 
@@ -78,6 +79,22 @@ master-mobile/windows/build/
 master-mobile/web/build/
 master-mobile/coverage/
 master-mobile/pubspec.lock
+
+# === master-mobile-v2 exclusions (parallel BLoC + auto_route + get_it build) ===
+master-mobile-v2/build/
+master-mobile-v2/.dart_tool/
+master-mobile-v2/.flutter-plugins
+master-mobile-v2/.flutter-plugins-dependencies
+master-mobile-v2/.idea/
+master-mobile-v2/.vscode/
+master-mobile-v2/web/build/
+master-mobile-v2/coverage/
+master-mobile-v2/pubspec.lock
+master-mobile-v2/*.iml
+# Generated codegen output — regenerated on build, do not track.
+master-mobile-v2/**/*.g.dart
+master-mobile-v2/**/*.freezed.dart
+# .gr.dart (auto_route) — tracked, part of source.
 
 # Secrets / large binaries that should never be tracked
 *.apk

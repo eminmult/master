@@ -1,0 +1,114 @@
+services:
+  # Watch-and-rebuild dev контейнер.
+  # Источник bind-mount'ится, polling находит изменения в lib/, assets/,
+  # pubspec.yaml, l10n.yaml и запускает `flutter build web --profile`
+  # (~10-30 сек инкрементальная сборка). Браузер делает manual refresh.
+  master-mobile-v2:
+    image: ghcr.io/cirruslabs/flutter:3.24.5
+    container_name: master-mobile-v2
+    working_dir: /app
+    volumes:
+      - .:/app
+      - mobile-v2-pub-cache:/root/.pub-cache
+      - mobile-v2-build:/app/build
+      - mobile-v2-dart-tool:/app/.dart_tool
+    ports:
+      - "8097:8095"
+    networks:
+      - master-network
+    restart: unless-stopped
+    environment:
+      API_BASE_URL: ${API_BASE_URL:-https://itez.app/api/v1}
+      SITE_URL: ${SITE_URL:-https://itez.app}
+      REVERB_HOST: ${REVERB_HOST:-ws.itez.app}
+      REVERB_KEY: ${REVERB_KEY:-}
+      REVERB_PORT: ${REVERB_PORT:-443}
+      BASE_HREF: ${BASE_HREF:-/master-mobile-v2/}
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        export DEBIAN_FRONTEND=noninteractive
+        if ! command -v python3 >/dev/null; then
+          apt-get update -qq && apt-get install -y --no-install-recommends python3 >/dev/null
+        fi
+        echo "==> flutter pub get"
+        flutter pub get
+        # web/ скаффолдинг не закоммичен — создаём при отсутствии.
+        if [ ! -f web/index.html ]; then
+          echo "==> flutter create (web)"
+          flutter create . --org az.gasimov.itez --platforms=web --project-name itez_mobile
+        fi
+        echo "==> gen-l10n"
+        flutter gen-l10n || true
+
+        rebuild() {
+          if [ pubspec.yaml -nt .dart_tool/package_config.json ] 2>/dev/null; then
+            echo "==> pubspec changed — flutter pub get"
+            flutter pub get || true
+          fi
+          flutter gen-l10n >/dev/null 2>&1 || true
+          echo "==> flutter build web --profile (incremental)"
+          if flutter build web --profile \
+            --web-renderer canvaskit \
+            --base-href="$$BASE_HREF" \
+            --no-tree-shake-icons \
+            --pwa-strategy=none \
+            --dart-define=API_BASE_URL="$$API_BASE_URL" \
+            --dart-define=SITE_URL="$$SITE_URL" \
+            --dart-define=REVERB_HOST="$$REVERB_HOST" \
+            --dart-define=REVERB_KEY="$$REVERB_KEY" \
+            --dart-define=REVERB_PORT="$$REVERB_PORT"; then
+              ts=$$(date +%s)
+              sed -i "s|\"main\.dart\.js\"|\"main.dart.js?v=$$ts\"|g" build/web/flutter_bootstrap.js
+              sed -i "s|\"canvaskit\.js\"|\"canvaskit.js?v=$$ts\"|g" build/web/flutter_bootstrap.js
+              sed -i "s|\"canvaskit\.wasm\"|\"canvaskit.wasm?v=$$ts\"|g" build/web/flutter_bootstrap.js
+              sed -i "s|flutter_bootstrap\.js[^\"]*|flutter_bootstrap.js?v=$$ts|g" build/web/index.html
+              # Kill-switch service worker (см. master-mobile dev compose).
+              printf '%s\n' \
+                "self.addEventListener('install', () => self.skipWaiting());" \
+                "self.addEventListener('activate', (e) => {" \
+                "  e.waitUntil((async () => {" \
+                "    const keys = await caches.keys();" \
+                "    await Promise.all(keys.map((k) => caches.delete(k)));" \
+                "    await self.registration.unregister();" \
+                "    const clients = await self.clients.matchAll();" \
+                "    clients.forEach((c) => c.navigate(c.url));" \
+                "  })());" \
+                "});" \
+                > build/web/flutter_service_worker.js
+              echo "==> build OK ($$(date +%H:%M:%S)) buster=$$ts"
+          else
+              echo "!!! build FAILED ($$(date +%H:%M:%S))"
+          fi
+        }
+
+        mkdir -p build/web
+        echo "<h1>master-mobile-v2: first build in progress…</h1>" > build/web/index.html
+        rebuild
+
+        # Static server — отдаёт build/web на :8095.
+        ( cd build/web && python3 -m http.server 8095 --bind 0.0.0.0 ) &
+
+        # Polling 2 сек по mtime — inotify не всегда работает через bind-mount.
+        echo "==> polling lib/ assets/ pubspec.yaml l10n.yaml"
+        prev=""
+        while true; do
+          cur=$$(find lib/ assets/ pubspec.yaml l10n.yaml -type f -printf '%T@:%p\n' 2>/dev/null | LC_ALL=C sort | sha256sum | cut -d' ' -f1)
+          if [ -n "$$prev" ] && [ "$$cur" != "$$prev" ]; then
+            rebuild
+          fi
+          prev="$$cur"
+          sleep 2
+        done
+
+networks:
+  master-network:
+    external: true
+    name: master-site_master-network
+
+volumes:
+  mobile-v2-pub-cache:
+  mobile-v2-build:
+  mobile-v2-dart-tool:
