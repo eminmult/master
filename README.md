@@ -12,21 +12,25 @@ master-site/          Web platform
   docker-compose.yml  Full stack: Postgres, Redis, Reverb (Laravel WebSockets)
   backup.sh           pg_dump → backups/ (excluded from git)
 
-master-mobile/        Flutter 3.x — Android + iOS client
+master-mobile/        Flutter 3.x — Android + iOS client (Riverpod + go_router)
+master-mobile-v2/     Flutter web — BLoC + auto_route + get_it (parallel rebuild,
+                      served at /master-mobile-v2/ on the same nginx)
 ```
 
 ## Quick start (web)
 
 ```bash
 cd master-site
-cp backend/.env.example backend/.env   # fill APP_KEY, DB_*, MAIL_*, GEMINI_KEY
+cp backend/.env.example backend/.env       # fill APP_KEY, DB_*, MAIL_*, GEMINI_KEY
+cp frontend/.env.example frontend/.env     # optional — defaults work for local dev
+cp sse/.env.example sse/.env               # optional — defaults work for local dev
 docker compose up -d
 docker exec master-api php artisan migrate --seed
 ```
 
 The site is then on http://localhost:8093 (Nuxt) with API on /api/v1/*.
 
-## Quick start (mobile)
+## Quick start (mobile, v1 — Android/iOS)
 
 ```bash
 cd master-mobile
@@ -35,6 +39,18 @@ docker compose run --rm master-mobile-dev flutter pub get
 docker compose run --rm master-mobile-dev flutter build apk --release \
   --dart-define=API_BASE_URL=https://itez.app/api/v1
 ```
+
+## Quick start (mobile v2 — Flutter web)
+
+Requires `master-site` already up (v2 attaches to `master-site_master-network`).
+
+```bash
+cd master-mobile-v2
+cp .env.example .env                       # build-time --dart-define args
+docker compose up -d --build
+```
+
+Served at http://localhost:8093/master-mobile-v2/ via the site nginx.
 
 ## SEO architecture
 
